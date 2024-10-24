@@ -1,0 +1,33 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+	  {
+		"label": "build-ts",
+		"type": "typescript",
+		"tsconfig": "tsm/tsconfig.json",
+		"problemMatcher": [
+		  "$tsc"
+		],
+		"group": {
+		  "kind": "build",
+		  "isDefault": true
+		},
+		"runOptions": {
+		  "runOn": "default"
+		}
+	  },
+	  {
+		"label": "run-extensions",
+		"type": "shell",
+		"command": "node",
+		"args": ["${workspaceFolder}/extentions.js"],
+		"problemMatcher": [],
+		"group": {
+		  "kind": "build",
+		  "isDefault": true
+		},
+		"dependsOn": "build-ts"
+	  }
+	]
+  }
+  
