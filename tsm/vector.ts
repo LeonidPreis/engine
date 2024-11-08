@@ -100,7 +100,8 @@ export class Vector {
         return new Vector([
             vA.y * vB.z - vA.z * vB.y,
             vA.z * vB.x - vA.x * vB.z,
-            vA.x * vB.y - vA.y * vB.x
+            vA.x * vB.y - vA.y * vB.x,
+            1
         ]);
     }
 

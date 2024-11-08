@@ -4,8 +4,5 @@ body {
     overflow: hidden;
     margin: 0;
     padding: 0;
-}
-
-#canvas {
     background-color: #b2b2b2;
 }

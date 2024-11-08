@@ -18,11 +18,19 @@ export class Euler {
         Euler.coordinatesSystem = system;
     }
 
+    static getCoordinatesSystem(): string {
+        return Euler.coordinatesSystem;
+    }
+
     static setOrder(order: 'XYZ' | 'XZY' | 'YXZ' | 'YZX' | 'ZXY' | 'ZYX'): void {
         if (order !== 'XYZ' && order !== 'XZY' && order !== 'YXZ' && order !== 'YZX' && order !== 'ZXY' && order !== 'ZYX') {
             throw new Error("Unknown order. Use 'XYZ', 'XZY', 'YXZ', 'YZX', 'ZXY' or 'ZYX'.");
         }
         Euler.order = order;
+    }
+
+    static getOrder(): string {
+        return Euler.order;
     }
 
     static from = class {

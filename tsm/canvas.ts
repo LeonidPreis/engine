@@ -5,30 +5,34 @@ export class Canvas {
     public zbuffer: number[];
     public aspect: number;
     private step: number;
-    private dpi: number;
-    public ratio: { x: number; y: number };
+    private container: HTMLElement;
 
-    constructor(canvas?: HTMLCanvasElement) {
-        if (!canvas) {
-            this.canvas = document.createElement('canvas');
-            this.canvas.id = "canvas";
-            document.getElementsByClassName('canvas-container')[0].appendChild(this.canvas);
-        } else {
-            this.canvas = canvas;
+    constructor(width: number, height: number, container: HTMLElement = document.body) {
+        if (!Number.isInteger(width) || !Number.isInteger(height)) {
+            throw new Error('Width and height of the canvas must be integers.');
         }
-        this.context = this.canvas.getContext('2d')!;
-        this.canvas.width = document.documentElement.clientWidth;
-        this.canvas.height = document.documentElement.clientHeight;
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = width % 2 === 0 ? width : width - 1;
+        this.canvas.height = height % 2 === 0 ? height : height - 1;
+        this.container = container;
+        if (container instanceof HTMLElement) {
+            this.container.appendChild(this.canvas);  
+            this.initialize();
+        } else {
+            throw new Error('Container must be HTML element.');
+        }
+    }
+
+    private initialize() {
+        this.container.style.width = `${this.width}px`;
+        this.container.style.height = `${this.height}px`;
+        this.canvas.id = 'canvas';
+        this.context = this.canvas.getContext('2d');
         this.buffer = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        this.zbuffer = new Array(this.canvas.width*this.canvas.height).fill(Infinity);
+        this.zbuffer = new Array(this.canvas.width * this.canvas.height).fill(Infinity);
         this.aspect = this.canvas.width / this.canvas.height;
         this.step = this.buffer.width * 4;
         this.context.imageSmoothingEnabled = false;
-        this.dpi = 1 / 2.54 * this.context.miterLimit;
-        this.ratio = {
-            x: this.canvas.width > this.canvas.height ? this.canvas.width / this.canvas.height : this.canvas.height / this.canvas.width,
-            y: this.canvas.width > this.canvas.height ? this.canvas.height / this.canvas.width : this.canvas.width / this.canvas.height
-        }
     }
 
     public set width(w: number) {

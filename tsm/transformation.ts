@@ -37,6 +37,10 @@ export class Transformation implements ITransformation {
         Transformation.coordinatesSystem = system;
     }
 
+    static getCoordinatesSystem(): string {
+        return Transformation.coordinatesSystem;
+    }
+
     setPosition(position: Vector): void {
         this.position = position;
         this.subjectToUpdate = true;
@@ -111,7 +115,10 @@ export class Transformation implements ITransformation {
     }
 
     static complex(position: Vector, orientation: Matrix | Euler | Quaternion, scale: Vector) {
-        return Matrix.multiply.matrix(Transformation.translation(position),
-            Matrix.multiply.matrix(Transformation.rotation(orientation), Transformation.scale(scale)));
+        return  Matrix.multiply.matrix(
+                    Transformation.translation(position),
+                    Matrix.multiply.matrix(
+                        Transformation.rotation(orientation),
+                        Transformation.scale(scale)));
     }
 }

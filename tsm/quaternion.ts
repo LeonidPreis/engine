@@ -42,14 +42,18 @@ export class Quaternion {
         return new Quaternion(this.data.map(value => value / length));
     }
 
+    norma(): number {
+        return (this.w**2 + this.x**2 + this.y**2 + this.z**2)**0.5;
+    }
+
     conjugate(): Quaternion {
-        return new Quaternion([-this.w, -this.x, -this.y, -this.z]);
+        return new Quaternion([this.w, -this.x, -this.y, -this.z]);
     }
 
     inverse(): Quaternion {
         const lengthSquared = this.length()**2;
         return new Quaternion([
-           -this.w / lengthSquared,
+           this.w / lengthSquared,
            -this.x / lengthSquared,
            -this.y / lengthSquared,
            -this.z / lengthSquared
@@ -81,6 +85,10 @@ export class Quaternion {
         Quaternion.coordinatesSystem = system;
     }
 
+    static getCoordinatesSystem(): string {
+        return Quaternion.coordinatesSystem;
+    }
+
     static equals(qA: Quaternion, qB: Quaternion): boolean {
         return qA.w === qB.w &&
                qA.x === qB.x &&
@@ -91,7 +99,7 @@ export class Quaternion {
     static to = class {
         static axis(q: Quaternion): Vector {
             const sin = Math.sin(Quaternion.to.angle(q) / 2);
-            return new Vector([q.x / sin, q.y / sin, q.z / sin]);
+            return new Vector([q.x / sin, q.y / sin, q.z / sin, 1]);
         }
 
         static angle(q: Quaternion): number {
@@ -234,13 +242,20 @@ export class Quaternion {
             ]);
         }
 
-        static vector(q: Quaternion, v: Vector): Quaternion {
-            return new Quaternion([
-               -q.x * v.y - q.y * v.z - q.z * v.w,
-                q.w * v.y + q.y * v.w - q.z * v.z,
-                q.w * v.z - q.x * v.w + q.z * v.y,
-                q.w * v.w + q.x * v.z - q.y * v.y
-            ]);
+        static vector(q: Quaternion, v: Vector): Vector {
+            // return new Quaternion([
+            //    -q.x * v.y - q.y * v.z - q.z * v.w,
+            //     q.w * v.y + q.y * v.w - q.z * v.z,
+            //     q.w * v.z - q.x * v.w + q.z * v.y,
+            //     q.w * v.w + q.x * v.z - q.y * v.y
+            // ]);
+            const vectorQuat = new Quaternion([0, v.x, v.y, v.z]);
+            const qInverse = q.inverse();
+            const resultQuat = Quaternion.multiply.quaternion(
+                Quaternion.multiply.quaternion(q, vectorQuat),
+                qInverse
+            );
+            return new Vector([resultQuat.x, resultQuat.y, resultQuat.z,1]);
         }
 
         static scalar(q: Quaternion, s: number): Quaternion {
@@ -249,34 +264,34 @@ export class Quaternion {
     }
 
     static rotate = class {
-        static x(v: Vector, roll: number): Quaternion {
+        static x(v: Vector, roll: number): Vector {
             const qv = new Quaternion([0, v.x, v.y, v.z]);
-            const q = Quaternion.from.angleAxis(roll, new Vector([1, 0, 0]));
-            const t = Quaternion.multiply.quaternion(q, qv);
-            return Quaternion.multiply.quaternion(t, q.inverse());
+            const q = Quaternion.from.angleAxis(roll, new Vector([1, 0, 0, 1]));
+            const t = Quaternion.multiply.quaternion(Quaternion.multiply.quaternion(q, qv), q.inverse());
+            return new Vector([t.x, t.y, t.z, 1]);
         }
 
-        static y(v: Vector, pitch: number): Quaternion {
+        static y(v: Vector, pitch: number): Vector {
             const qv = new Quaternion([0, v.x, v.y, v.z]);
-            const q = Quaternion.from.angleAxis(pitch, new Vector([0, 1, 0]));
-            const t = Quaternion.multiply.quaternion(q, qv);
-            return Quaternion.multiply.quaternion(t, q.inverse());
+            const q = Quaternion.from.angleAxis(pitch, new Vector([0, 1, 0, 1]));
+            const t = Quaternion.multiply.quaternion(Quaternion.multiply.quaternion(q, qv), q.inverse());
+            return new Vector([t.x, t.y, t.z, 1]);
         }
 
-        static z(v: Vector, yaw: number): Quaternion {
+        static z(v: Vector, yaw: number): Vector {
             const qv = new Quaternion([0, v.x, v.y, v.z]);
-            const q = Quaternion.from.angleAxis(yaw, new Vector([0, 0, 1]));
-            const t = Quaternion.multiply.quaternion(q, qv);
-            return Quaternion.multiply.quaternion(t, q.inverse());
+            const q = Quaternion.from.angleAxis(yaw, new Vector([0, 0, 1, 1]));
+            const t = Quaternion.multiply.quaternion(Quaternion.multiply.quaternion(q, qv), q.inverse());
+            return new Vector([t.x, t.y, t.z, 1]);
         }
 
-        static xyz(v: Vector, roll: number, pitch: number, yaw: number): Quaternion {
-            const qX = Quaternion.from.angleAxis(roll, new Vector([1, 0, 0]));
-            const qY = Quaternion.from.angleAxis(pitch, new Vector([0, 1, 0]));
-            const qZ = Quaternion.from.angleAxis(yaw, new Vector([0, 0, 1]));
+        static xyz(v: Vector, roll: number, pitch: number, yaw: number): Vector {
+            const qX = Quaternion.from.angleAxis(roll, new Vector([1, 0, 0, 1]));
+            const qY = Quaternion.from.angleAxis(pitch, new Vector([0, 1, 0, 1]));
+            const qZ = Quaternion.from.angleAxis(yaw, new Vector([0, 0, 1, 1]));
             const qXYZ = Quaternion.multiply.quaternion(qX, Quaternion.multiply.quaternion(qY, qZ));
-            const t = Quaternion.multiply.quaternion(qXYZ, new Quaternion([0, v.x, v.y, v.z]));
-            return Quaternion.multiply.quaternion(t, qXYZ.inverse());
+            const t = Quaternion.multiply.quaternion(Quaternion.multiply.quaternion(qXYZ, new Quaternion([0, v.x, v.y, v.z])), qXYZ.inverse());;
+            return new Vector([t.x, t.y, t.z, 1]);
         }
     }
 
@@ -317,6 +332,6 @@ export class Quaternion {
     }
 
     static angle(qAn: Quaternion, qBn: Quaternion): number {
-        return 2 * Math.acos(Math.abs(Quaternion.dot(qAn, qBn)));
+        return 2 * Math.acos(Math.abs(Quaternion.dot(qAn, qBn)/(qAn.norma()*qBn.norma())));
     }
 }
