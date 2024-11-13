@@ -1,124 +1,120 @@
-import { Vector } from './vector';
-import { Matrix } from './matrix';
+import { Vector3, Vector4 } from './vector';
+import { Matrix4 } from './matrix';
 import { Euler } from './euler';
 import { Quaternion } from './quaternion';
 
 export interface ITransformation {
-    position: Vector;
-    orientation: Matrix | Euler | Quaternion;
-    scale: Vector;
-    setPosition(position: Vector);
-    setOrientation(orientation: Matrix);
-    setScale?(scale: Vector);
+    position: Vector3 | Vector4;
+    orientation: Matrix4 | Euler | Quaternion;
+    scale: Vector3 | Vector4;
+    setPosition(position:Vector3 | Vector4);
+    setOrientation(orientation: Matrix4);
+    setScale?(scale: Vector3 | Vector4);
 }
 
 export class Transformation implements ITransformation {
-    static coordinatesSystem: 'RHS' | 'LHS' = 'RHS';
-    position: Vector = new Vector([0,0,0,1]); 
-    orientation: Matrix | Euler | Quaternion = Matrix.identity(4);
-    scale: Vector = new Vector([1,1,1,1]);
-    private lastTransform: Matrix = Matrix.identity(4);
+    coordinatesSystem: 'RHS' | 'LHS' = 'RHS';
+    position: Vector3 = new Vector3(0,0,0); 
+    orientation: Matrix4 | Euler | Quaternion = new Matrix4;
+    scale: Vector3 = new Vector3(1,1,1);
+    private lastTransform: Matrix4 = new Matrix4;
     private subjectToUpdate: boolean = true;
  
     constructor(
-        position: Vector = new Vector([0,0,0,1]),
-        orientation: Matrix | Euler | Quaternion = Matrix.identity(4),
-        scale: Vector = new Vector([1,1,1,1])
+        position: Vector3 | Vector4 = new Vector3(0,0,0),
+        orientation: Matrix4 | Euler | Quaternion = new Matrix4,
+        scale: Vector3 | Vector4 = new Vector3(1,1,1)
     ) {
         this.position = position;
         this.orientation = orientation;
         this.scale = scale;
     }
 
-    static setCoordinatesSystem(system: 'RHS' | 'LHS'): void {
+    setCoordinatesSystem(system: 'RHS' | 'LHS'): void {
         if (system !== 'RHS' && system !== 'LHS') {
             throw new Error("Unknown coordinate system. Use 'LHS' or 'RHS'.");
         }
-        Transformation.coordinatesSystem = system;
+        this.coordinatesSystem = system;
     }
 
-    static getCoordinatesSystem(): string {
-        return Transformation.coordinatesSystem;
+    getCoordinatesSystem(): string {
+        return this.coordinatesSystem;
     }
 
-    setPosition(position: Vector): void {
+    setPosition(position: Vector3 | Vector4): void {
         this.position = position;
         this.subjectToUpdate = true;
     }
 
-    setOrientation(orientation: Matrix | Euler | Quaternion): void {
-        if (orientation instanceof Matrix) {
-            this.orientation = orientation;
-        } else if (orientation instanceof Euler) {
-            this.orientation = Euler.rotate.xyz(orientation);
-        } else if (orientation instanceof Quaternion) {
-            this.orientation = Quaternion.to.matrix(orientation);
-        } else {
-            throw new Error("Rotation must be either a Matrix, Euler or Quaternion.");
-        }
-        this.subjectToUpdate = true;
-    }
-
-    setScale(scale: Vector): void {
+    setScale(scale: Vector3 | Vector4): void {
         this.scale = scale;
         this.subjectToUpdate = true;
     }
 
-    get transformation(): Matrix {
+    setOrientation(orientation: Matrix4 | Euler | Quaternion): void {
+        if (orientation instanceof Matrix4) {
+            this.orientation = orientation;
+        } else if (orientation instanceof Euler) {
+            this.orientation = orientation.rotateXYZ();
+        } else if (orientation instanceof Quaternion) {
+            this.orientation = orientation.toRotationMatrix();
+        } else {
+            throw new Error("Rotation must be either a Matrix4, Euler or Quaternion.");
+        }
+        this.subjectToUpdate = true;
+    }
+
+    getTransformation(): Matrix4 {
         if (!this.subjectToUpdate) {
             return this.lastTransform;
         }
-        this.lastTransform = Transformation.complex(this.position, this.orientation, this.scale);
+        this.lastTransform = this.complex(this.position, this.orientation, this.scale);
         this.subjectToUpdate = false;
         return this.lastTransform;
     }
 
-    static scale(s: Vector): Matrix {
-        return new Matrix([
-            [s.x,0, 0, 0],
-            [0, s.y,0, 0],
-            [0, 0, s.z,0],
-            [0, 0, 0,  1]
-        ]);
+    getScaleMatrix(s: Vector3 | Vector4): Matrix4 {
+        return new Matrix4(
+            s.x,0, 0, 0,
+            0, s.y,0, 0,
+            0, 0, s.z,0,
+            0, 0, 0,  1
+        );
     }
 
-    static translation(t: Vector): Matrix {
-        switch (Transformation.coordinatesSystem) {
+    getTranslationMatrix(t: Vector3 | Vector4): Matrix4 {
+        switch (this.coordinatesSystem) {
             case 'LHS':
-                return new Matrix([
-                    [1, 0, 0, t.x],
-                    [0, 1, 0, t.y],
-                    [0, 0, 1,-t.z],
-                    [0, 0, 0,   1]
-                ]);
+                return new Matrix4(
+                    1, 0, 0, t.x,
+                    0, 1, 0, t.y,
+                    0, 0, 1,-t.z,
+                    0, 0, 0,   1
+                );
             case 'RHS':
             default:
-                return new Matrix([
-                    [1, 0, 0, t.x],
-                    [0, 1, 0, t.y],
-                    [0, 0, 1, t.z],
-                    [0, 0, 0,   1]
-                ]);
+                return new Matrix4(
+                    1, 0, 0, t.x,
+                    0, 1, 0, t.y,
+                    0, 0, 1, t.z,
+                    0, 0, 0,   1
+                );
         }
     }
 
-    static rotation(rotation: Matrix | Euler | Quaternion): Matrix {
-        if (rotation instanceof Matrix) {
+    getRotationMatrix(rotation: Matrix4 | Euler | Quaternion): Matrix4 {
+        if (rotation instanceof Matrix4) {
             return rotation;
         } else if (rotation instanceof Euler) {
-            return Euler.rotate.xyz(rotation);
+            return rotation.rotateXYZ();
         } else if (rotation instanceof Quaternion) {
-            return Quaternion.to.matrix(rotation);
+            return rotation.toRotationMatrix();
         } else {
-            throw new Error("Rotation must be either a Matrix, Euler or Quaternion.");
+            throw new Error("Rotation must be either a Matrix4, Euler or Quaternion.");
         }
     }
 
-    static complex(position: Vector, orientation: Matrix | Euler | Quaternion, scale: Vector) {
-        return  Matrix.multiply.matrix(
-                    Transformation.translation(position),
-                    Matrix.multiply.matrix(
-                        Transformation.rotation(orientation),
-                        Transformation.scale(scale)));
+    complex(position: Vector3 | Vector4, orientation: Matrix4 | Euler | Quaternion, scale: Vector3 | Vector4): Matrix4 {
+        return this.getRotationMatrix(orientation).multiplyMatrix(this.getScaleMatrix(scale)).multiplyMatrix(this.getTranslationMatrix(position));
     }
 }

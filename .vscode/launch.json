@@ -11,7 +11,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}/jsm/quaternion.js",
+            "program": "${workspaceFolder}/jsm/render.js",
             "outFiles": [
                 "${workspaceFolder}/jsm/**/*.js"
             ],

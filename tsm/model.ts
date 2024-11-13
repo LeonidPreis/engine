@@ -1,17 +1,17 @@
 import { Polygon } from "./polygon";
-import { Vector } from "./vector";
+import { Vector3 } from "./vector";
 
 export interface IModel {
-    vertices: Vector[];
+    vertices: Vector3[];
     polygons: Polygon[];
 }
 
 export class Model implements IModel {
-    vertices: Vector[];
+    vertices: Vector3[];
     polygons: Polygon[];
 
     constructor(
-        vertices: Vector[],
+        vertices: Vector3[],
         polygons: Polygon[]
     ) {
         this.vertices = vertices;

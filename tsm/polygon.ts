@@ -1,5 +1,5 @@
 import { Color } from "./color";
-import { Vector } from "./vector";
+import { Vector4 } from "./vector";
 
 export class Polygon {
     vA: number;
@@ -24,9 +24,7 @@ export class Polygon {
         this.cC = cC;
     }
 
-    normal(projected: Vector[]): Vector {
-        return Vector.cross(
-            Vector.subtract(projected[this.vB], projected[this.vA]),
-            Vector.subtract(projected[this.vC], projected[this.vA]));
+    normal(projected: Vector4[]): Vector4 {
+        return projected[this.vB].subtract(projected[this.vA]).cross(projected[this.vC].subtract(projected[this.vA]));
     }
 }

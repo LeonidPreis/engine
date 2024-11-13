@@ -2,16 +2,16 @@
 import { Camera } from "./camera";
 import { Canvas } from "./canvas";
 import { IInstance, Instance } from "./instance";
-import { Matrix } from "./matrix";
+import { Matrix4 } from "./matrix";
 import { Polygon } from "./polygon";
-import { Vector } from "./vector";
+import { Vector4, Vector3} from "./vector";
 import { Draw } from "./draw";
 import { IModel, Model } from "./model";
 import { Color } from "./color";
 
 export class Render {
     static coordinatesSystem: 'RHS' | 'LHS' = 'RHS';
-    private static cameraDirection = this.coordinatesSystem === 'RHS' ? new Vector([0, 0, -1, 1]) : new Vector([0, 0, 1, 1]);
+    private static cameraDirection = this.coordinatesSystem === 'RHS' ? new Vector4(0, 0, -1) : new Vector4(0, 0, 1);
     static drawMethod: 'wireframe' | 'filled' | 'shaded' | 'gradient' = 'gradient';
     static drawOutlines: boolean = false;
     static renderInstance: Render;
@@ -29,39 +29,39 @@ export class Render {
         this.renderInstance = new Render(canvas, camera, instances);
     }
 
-    private screenCoordinates(view: Vector) {
-        return new Vector([
+    private screenCoordinates(view: Vector4) {
+        return new Vector3(
             (view.x * this.canvas.width / this.canvas.aspect)|0,
            -(view.y * this.canvas.height / this.canvas.aspect)|0,
-            view.z,
-            view.w
-        ]); 
+            view.z
+        ); 
     }
 
-    private perspectiveDivision(ndc: Vector) {
-        if (ndc.w === 0) {
-            throw Error("W component of the vector is 0.")
+    private perspectiveDivision(ndc: Vector4) {
+        if (ndc.w !== 0) {
+            const x = ndc.x / ndc.w;
+            const y = ndc.y / ndc.w;
+            const z = ndc.z / ndc.w;
+            return this.screenCoordinates(new Vector4(x, y, z, 1));
         }
-        const x = ndc.x / ndc.w;
-        const y = ndc.y / ndc.w;
-        const z = ndc.z / ndc.w;
-        return this.screenCoordinates(new Vector([x, y, z, 1]));
+        throw new Error("W component of the vector is 0.")
     }
 
     private backfaceCulling(normal): boolean {
-        const dot = Vector.dot(normal, Render.cameraDirection);
+        const dot = normal.dot(Render.cameraDirection);
         return dot > 0 ? true : false;
     }
 
     model(camera: Camera, instance: Instance) {
-        const viewed: Vector[] = [];
-        const cameraView: Matrix = camera.view();
-        const cameraProjection: Matrix = camera.getProjectionMatrix();
+        const viewed: Vector4[] = [];
+        const cameraView: Matrix4 = camera.view();
+        const cameraProjection: Matrix4 = camera.getProjectionMatrix();
 
         for (let i = 0; i < instance.model.vertices.length; i++) {
-            const local: Vector = instance.model.vertices[i];
-            const global: Vector = Matrix.multiply.vector(instance.transformation, local);
-            const view: Vector = Matrix.multiply.vector(cameraView, global);
+            const vector: Vector3 = instance.model.vertices[i];
+            const local: Vector4 = new Vector4(vector.x, vector.y, vector.z, 1);
+            const global: Vector4 = instance.transformation.multiplyVector(local);
+            const view: Vector4 = cameraView.multiplyVector(global);
             viewed.push(view);
         }
 
@@ -70,12 +70,12 @@ export class Render {
                 const polygon: Polygon = instance.model.polygons[i];
 
                 if (this.backfaceCulling(polygon.normal(viewed))) {
-                    const ndcA: Vector = Matrix.multiply.vector(cameraProjection, viewed[polygon.vA]);
-                    const ndcB: Vector = Matrix.multiply.vector(cameraProjection, viewed[polygon.vB]);
-                    const ndcC: Vector = Matrix.multiply.vector(cameraProjection, viewed[polygon.vC]);
-                    const screenA: Vector = this.perspectiveDivision(ndcA);
-                    const screenB: Vector = this.perspectiveDivision(ndcB);
-                    const screenC: Vector = this.perspectiveDivision(ndcC);
+                    const ndcA: Vector4 = cameraProjection.multiplyVector(viewed[polygon.vA]);
+                    const ndcB: Vector4 = cameraProjection.multiplyVector(viewed[polygon.vB]);
+                    const ndcC: Vector4 = cameraProjection.multiplyVector(viewed[polygon.vC]);
+                    const screenA: Vector3 = this.perspectiveDivision(ndcA);
+                    const screenB: Vector3 = this.perspectiveDivision(ndcB);
+                    const screenC: Vector3 = this.perspectiveDivision(ndcC);
 
                     switch(Render.drawMethod) {
                         case 'wireframe': 
@@ -90,7 +90,7 @@ export class Render {
                     }
     
                     if (Render.drawOutlines) {
-                        Draw.triangle.wireframe(screenA, screenB, screenC,[0,255,255,255]);
+                        Draw.triangle.wireframe(screenA, screenB, screenC, [0,255,255,255], false);
                     }
                 }
             }
@@ -115,14 +115,14 @@ export class Render {
 
 const model: IModel = new Model(
     [
-        new Vector([-1,-1,-1, 1]),
-        new Vector([-1, 1,-1, 1]),
-        new Vector([ 1, 1,-1, 1]),
-        new Vector([ 1,-1,-1, 1]),
-        new Vector([-1,-1, 1, 1]),
-        new Vector([-1, 1, 1, 1]),
-        new Vector([ 1, 1, 1, 1]),
-        new Vector([ 1,-1, 1, 1])
+        new Vector3(-1,-1,-1),
+        new Vector3(-1, 1,-1),
+        new Vector3( 1, 1,-1),
+        new Vector3( 1,-1,-1),
+        new Vector3(-1,-1, 1),
+        new Vector3(-1, 1, 1),
+        new Vector3( 1, 1, 1),
+        new Vector3( 1,-1, 1)
     ],
     [
         new Polygon(0,1,3, new Color('RGBA',[0,0,0,255]),       new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[255,0,0,255])),
@@ -142,9 +142,9 @@ const model: IModel = new Model(
 
 var instance: IInstance = new Instance(
     model,
-    new Vector([0,0,0,1]),
-    Matrix.identity(4),
-    new Vector([10,10,10,1])
+    new Vector3(0,0,0),
+    new Matrix4,
+    new Vector3(10,10,10)
 );
 
 const instances: IInstance[] = [
@@ -156,7 +156,7 @@ let canvas = new Canvas(
     document.documentElement.clientHeight,
     document.getElementsByClassName('canvas-container')[0] as HTMLElement);
 let draw = new Draw(canvas);
-let camera = new Camera(canvas, new Vector([0,0,0,1]), new Vector([50,50,50,1]), 0.1, 500, 90);
+let camera = new Camera(canvas, new Vector4(0,0,0), new Vector4(50,50,50), 0.1, 500, 90);
 let render = Render.initialize(canvas, camera, instances);
 
 Render.main();
