@@ -12,9 +12,9 @@ export class Polygon {
         vA: number,
         vB: number,
         vC: number,
-        cA: Color,
-        cB: Color,
-        cC: Color
+        cA: Color = new Color('RGBA', [255, 0, 255, 255]),
+        cB: Color = new Color('RGBA', [255, 0, 255, 255]),
+        cC: Color = new Color('RGBA', [255, 0, 255, 255])
     ) {
         this.vA = vA;
         this.vB = vB;

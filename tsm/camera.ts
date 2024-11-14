@@ -41,7 +41,7 @@ export class Camera {
         this.right = new Vector4(0,1,0,1).cross(this.forward).normalize();
         this.up = this.forward.cross(this.right).normalize();
         this.radius = this.distance();
-        this.rotationQuaternion = Quaternion.fromAngleAxis(1, this.position).normalize();
+        this.rotationQuaternion = Quaternion.fromAngleAxis(Math.cos(90 * Math.PI / 180), this.position).normalize();
         this.rotationMatrix = this.rotationQuaternion.toRotationMatrix();
         this.updateOrientationVectors();
         this.updateCameraPosition();
