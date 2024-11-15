@@ -8,12 +8,13 @@ import { Vector4, Vector3} from "./vector";
 import { Draw } from "./draw";
 import { IModel, Model } from "./model";
 import { Color } from "./color";
+import { Mesh } from "./mesh";
 
 export class Render {
     static coordinatesSystem: 'RHS' | 'LHS' = 'RHS';
     private static cameraDirection = this.coordinatesSystem === 'RHS' ? new Vector4(0, 0, -1) : new Vector4(0, 0, 1);
-    static drawMethod: 'wireframe' | 'filled' | 'shaded' | 'gradient' = 'gradient';
-    static drawOutlines: boolean = false;
+    static drawMethod: 'wireframe' | 'filled' | 'shaded' | 'gradient' = 'filled';
+    static drawOutlines: boolean = true;
     static renderInstance: Render;
     canvas: Canvas;
     camera: Camera;
@@ -141,7 +142,7 @@ const model: IModel = new Model(
 );
 
 var instance: IInstance = new Instance(
-    model,
+    new Mesh().plane(2,2,10,10),
     new Vector3(0,0,0),
     new Matrix4,
     new Vector3(10,10,10)
