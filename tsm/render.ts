@@ -142,10 +142,10 @@ const model: IModel = new Model(
 );
 
 var instance: IInstance = new Instance(
-    new Mesh().plane(2,2,10,10),
+    new Mesh().disc(0,9,3,8),
     new Vector3(0,0,0),
     new Matrix4,
-    new Vector3(10,10,10)
+    new Vector3(6,6,6)
 );
 
 const instances: IInstance[] = [

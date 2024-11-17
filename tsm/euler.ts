@@ -11,10 +11,11 @@ export class Euler {
     pitch: number;
     yaw: number;
 
-    constructor(roll: number = 0, pitch: number = 0, yaw: number = 0) {
+    constructor(roll: number = 0, pitch: number = 0, yaw: number = 0, order: 'XYZ' | 'XZY' | 'YXZ' | 'YZX' | 'ZXY' | 'ZYX' = 'XYZ') {
         this.roll = roll;
         this.pitch = pitch;
         this.yaw = yaw;
+        this.order = order;
     }
 
     setCoordinatesSystem(system: 'RHS' | 'LHS'): void {

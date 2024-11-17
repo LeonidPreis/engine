@@ -127,4 +127,56 @@ export class Mesh {
         }
         return new Model(vertices, polygons);
     }
+
+    disc(innerDiameter: number, outerDiameter: number, discSegments: number, rotationSegments: number, startAngle: number = 0, endAngle: number = 360): Model {
+        discSegments = discSegments + 1;
+        const radians = Math.PI / 180;
+        const innerRadius = innerDiameter / 2;
+        const outerRadius = outerDiameter / 2;
+        const radiusStep = (outerRadius - innerRadius) / discSegments;
+        const angleStep = (endAngle - startAngle) / rotationSegments;
+        const vertices = [];
+        const polygons = [];
+        
+        for (var i = radiusStep; i <= outerRadius; i += radiusStep) {
+            for (var j = startAngle; j < endAngle; j += angleStep) {
+                vertices.push(new Vector3(i * Math.cos(j * radians), i * Math.sin(j * radians), 0));
+            }
+        }
+
+        discSegments = discSegments - 1;
+
+        for (var i = 0; i < rotationSegments; i++) {
+            for (var j = 0; j < discSegments; j++) {
+                var transition = ((i * (discSegments) + j) + rotationSegments + 1);
+                var a = i * (discSegments) + j;
+                var b = a + rotationSegments;
+                var c = b + 1;
+                var d = a;
+                var e = c;
+                var f = a + 1;
+                
+                if (transition % rotationSegments == 0) {
+                    var c = f;
+                    var e = f;
+                    var f = f - rotationSegments;
+                }
+
+                polygons.push(new Polygon(a, b, c, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
+                polygons.push(new Polygon(d, e, f, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));           
+            }
+        }
+
+        if (innerDiameter === 0) {
+            vertices.push(new Vector3(0,0,0));
+            var c = vertices.length - 1;
+            for (var i = 0; i < rotationSegments; i++) {
+                var a = i;
+                var b = a + 1;
+                if (a + 1 == rotationSegments) {b = 0}
+                polygons.push(new Polygon(a, b, c, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
+            }
+        }
+        return new Model(vertices, polygons);
+    }
 }
