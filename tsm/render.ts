@@ -142,7 +142,7 @@ const model: IModel = new Model(
 );
 
 var instance: IInstance = new Instance(
-    new Mesh().disc(0,9,3,8),
+    new Mesh().sphere(),
     new Vector3(0,0,0),
     new Matrix4,
     new Vector3(6,6,6)

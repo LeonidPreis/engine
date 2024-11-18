@@ -6,7 +6,15 @@ import { Color} from "./color";
 export class Mesh {
     static defaultColor = new Color('HEX', '#776F74');
 
-    cube(width: number = 1, height: number = 1, length: number = 1, widthSegments: number = 1, heightSegments: number = 1, lengthSegments: number = 1): Model {
+    cube(
+        width: number = 1, 
+        height: number = 1, 
+        length: number = 1, 
+        widthSegments: number = 1, 
+        heightSegments: number = 1, 
+        lengthSegments: number = 1
+        ): Model {
+
         const xStart = -width / 2;
         const xStep = width / widthSegments;
         const yStart = -height / 2;
@@ -94,7 +102,13 @@ export class Mesh {
         return new Model(vertices, polygons);
     }
 
-    plane(width: number = 1, height: number = 1, widthSegments: number = 1, heightSegments: number = 1): Model {
+    plane(
+        width: number = 1,
+        height: number = 1,
+        widthSegments: number = 1,
+        heightSegments: number = 1  
+        ): Model {
+            
         const xStart = -width / 2;
         const xStep = width / widthSegments;
         const yStart = -height / 2;
@@ -128,7 +142,15 @@ export class Mesh {
         return new Model(vertices, polygons);
     }
 
-    disc(innerDiameter: number, outerDiameter: number, discSegments: number, rotationSegments: number, startAngle: number = 0, endAngle: number = 360): Model {
+    disc(
+        innerDiameter: number = 0,
+        outerDiameter: number = 0,
+        discSegments: number = 5,
+        rotationSegments: number = 10,
+        startAngle: number = 0,
+        endAngle: number = 360
+        ): Model {
+        
         discSegments = discSegments + 1;
         const radians = Math.PI / 180;
         const innerRadius = innerDiameter / 2;
@@ -175,6 +197,49 @@ export class Mesh {
                 var b = a + 1;
                 if (a + 1 == rotationSegments) {b = 0}
                 polygons.push(new Polygon(a, b, c, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
+            }
+        }
+        return new Model(vertices, polygons);
+    }
+
+    sphere(
+        diameter: number = 1,
+        sectors: number = 10,
+        stacks: number = 10,
+        ): Model {
+
+        const vertices: Vector3[] = [];
+        const polygons: Polygon[] = [];
+        const radius = diameter / 2;
+        const stackStep = Math.PI / stacks;
+        const sectorStep = 2 * Math.PI / sectors;
+
+        for (let i = 0; i <= stacks; i++) {
+            const phi = Math.PI / 2 - i * stackStep
+            const y = radius * Math.sin(phi);
+            const r = radius * Math.cos(phi);
+    
+            for (let j = 0; j <= sectors; j++) {
+                const theta = j * sectorStep;
+                const x = r * Math.cos(theta);
+                const z = r * Math.sin(theta);
+                vertices.push(new Vector3(x, y, z));
+            }
+        }
+    
+        for (let i = 0; i < stacks; i++) {
+            for (let j = 0; j < sectors; j++) {
+                const a = i * (sectors + 1) + j;
+                const b = a + sectors + 1;
+                const c = b + 1;
+                const d = a + 1;
+    
+                if (i !== 0) {
+                    polygons.push(new Polygon(a, d, b, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
+                }
+                if (i !== stacks - 1) {
+                    polygons.push(new Polygon(b, d, c, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
+                }
             }
         }
         return new Model(vertices, polygons);
