@@ -113,7 +113,6 @@ export class Mesh {
         const xStep = width / widthSegments;
         const yStart = -height / 2;
         const yStep = height / heightSegments;
-    
         const vertices: Vector3[] = [];
         const polygons: Polygon[] = [];
 
@@ -176,14 +175,12 @@ export class Mesh {
                 var c = b + 1;
                 var d = a;
                 var e = c;
-                var f = a + 1;
-                
+                var f = a + 1;      
                 if (transition % rotationSegments == 0) {
                     var c = f;
                     var e = f;
                     var f = f - rotationSegments;
                 }
-
                 polygons.push(new Polygon(a, b, c, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
                 polygons.push(new Polygon(d, e, f, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));           
             }
@@ -218,7 +215,6 @@ export class Mesh {
             const phi = Math.PI / 2 - i * stackStep
             const y = radius * Math.sin(phi);
             const r = radius * Math.cos(phi);
-    
             for (let j = 0; j <= sectors; j++) {
                 const theta = j * sectorStep;
                 const x = r * Math.cos(theta);
@@ -231,17 +227,51 @@ export class Mesh {
             for (let j = 0; j < sectors; j++) {
                 const a = i * (sectors + 1) + j;
                 const b = a + sectors + 1;
-                const c = b + 1;
-                const d = a + 1;
-    
                 if (i !== 0) {
-                    polygons.push(new Polygon(a, d, b, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
+                    polygons.push(new Polygon(a, a + 1, b, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
                 }
                 if (i !== stacks - 1) {
-                    polygons.push(new Polygon(b, d, c, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
+                    polygons.push(new Polygon(b, a + 1, b + 1, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
                 }
             }
         }
         return new Model(vertices, polygons);
     }
+
+    torus(
+        torusDiameter: number = 10,
+        tubeDiameter: number = 5,
+        stecks: number = 30,
+        sectors: number = 20
+    ): Model {
+
+        const torusRadius = torusDiameter / 2;
+        const baseRadius = tubeDiameter / 2;
+        const stackStep = 2 * Math.PI / sectors;
+        const sectorStep = 2 * Math.PI / stecks;
+        const vertices: Vector3[] = [];
+        const polygons: Polygon[] = [];
+
+        for (var i = 0; i <= sectors; i++) {
+            var phi = Math.PI - i * stackStep;
+            var xy = baseRadius * Math.cos(phi);
+            var z = baseRadius * Math.sin(phi);
+            for (var j = 0; j <= stecks; j++) {
+                var theta = j * sectorStep;
+                var x = xy * Math.cos(theta) + torusRadius * Math.cos(theta);
+                var y = xy * Math.sin(theta) + torusRadius * Math.sin(theta);
+                vertices.push(new Vector3(x, y, z));
+            }
+        }
+
+        for (let i = 0; i < sectors; ++i) {
+            var a = i * (stecks + 1);
+            var b = a + stecks + 1;
+            for (let j = 0; j < stecks; ++j, ++a, ++b) {
+                polygons.push(new Polygon(a, b, a + 1, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
+                polygons.push(new Polygon(a + 1, b, b + 1, Mesh.defaultColor, Mesh.defaultColor, Mesh.defaultColor));
+            }
+        }
+        return new Model(vertices, polygons)
+    } 
 }
