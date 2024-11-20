@@ -7,7 +7,8 @@ export class Polygon {
     vC: number;
     cA: Color;
     cB: Color;
-    cC: Color
+    cC: Color;
+    normalView: Vector4 | null = null;
     constructor(
         vA: number,
         vB: number,
@@ -24,7 +25,7 @@ export class Polygon {
         this.cC = cC;
     }
 
-    normal(projected: Vector4[]): Vector4 {
+    calculateNormal(projected: Vector4[]): Vector4 {
         return projected[this.vB].subtract(projected[this.vA]).cross(projected[this.vC].subtract(projected[this.vA]));
     }
 }
