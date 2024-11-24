@@ -70,7 +70,7 @@ export class Render {
             for (let i = 0; i < instance.model.polygons.length; i++) {
                 const polygon: Polygon = instance.model.polygons[i];
 
-                if (this.backfaceCulling(polygon.normal(viewed))) {
+                if (this.backfaceCulling(polygon.calculateNormal(viewed))) {
                     const ndcA: Vector4 = cameraProjection.multiplyVector(viewed[polygon.vA]);
                     const ndcB: Vector4 = cameraProjection.multiplyVector(viewed[polygon.vB]);
                     const ndcC: Vector4 = cameraProjection.multiplyVector(viewed[polygon.vC]);

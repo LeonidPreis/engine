@@ -102,4 +102,102 @@ export class VertexShader {
         }
         return [screenVertices, polygons];
     }
+
+    getOutCodes(vANDC: Vector4, vBNDC: Vector4): number[] | null {
+        function computeCode(x: number, y: number, z: number) {
+            let code = 0;
+            if (x < -1) code |= 0b100000; 
+            if (x >  1) code |= 0b010000;
+            if (y < -1) code |= 0b001000;
+            if (y >  1) code |= 0b000100;
+            if (z < -1) code |= 0b000010;
+            if (z >  1) code |= 0b000001;
+            return code;
+        }
+
+        const aCode = computeCode(vANDC.x, vANDC.y, vANDC.z);
+        const bCode = computeCode(vBNDC.x, vBNDC.y, vBNDC.z);
+
+        if ((aCode & bCode) !== 0) { return null; }
+        return [aCode, bCode];        
+    }
+
+    static clippLine(vANDC: Vector4, vBNDC: Vector4): Vector4[] | null {
+        const xA = vANDC.x, xB = vBNDC.x;
+        const yA = vANDC.y, yB = vBNDC.y;
+        const zA = vANDC.z, zB = vBNDC.z;
+        const xMin = -1, xMax = 1;
+        const yMin = -1, yMax = 1;
+        const zMin = -1, zMax = 1;
+
+        const p = [
+            -(xB - xA), xB - xA,
+            -(yB - yA), yB - yA,
+            -(zB - zA), zB - zA
+        ];
+
+        const q = [
+            xA - xMin, xMax - xA, 
+            yA - yMin, yMax - yA, 
+            zA - zMin, zMax - zA
+        ];
+
+        let tIn = 0;
+        let tOut = 1;
+
+        for (let i = 0; i < 6; i++) {
+            if (p[i] === 0) {
+                if (q[i] < 0) {
+                    return null;
+                }
+            } else {
+                const t = q[i] / p[i];
+                if (p[i] < 0) {
+                    tIn = Math.max(tIn, t);
+                } else {
+                    tOut = Math.min(tOut, t);
+                }
+            }
+            if (tIn > tOut) {
+                return null;
+            }
+        }
+    
+        return [
+            new Vector4(
+                xA + tIn * (xB - xA),
+                yA + tIn * (yB - yA),
+                zA + tIn * (zB - zA)
+            ),
+            new Vector4(
+                xA + tOut * (xB - xA),
+                yA + tOut * (yB - yA),
+                zA + tOut * (zB - zA)
+            )
+        ];
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
