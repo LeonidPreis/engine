@@ -156,6 +156,10 @@ export class Vector4 extends AbstractVector<Vector4> {
         this.w = w;
     }
 
+    equal(v4: Vector4) {
+        return this.x === v4.x && this.y === v4.y && this.z === v4.z && this.w === v4.w;
+    }
+
     clone(): Vector4 {
         return new Vector4(this.x, this.y, this.z, this.w);
     }

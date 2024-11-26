@@ -17,15 +17,15 @@ export class VertexShader {
     xScreenMultiplier: number;
     yScreenMultiplier: number;
 
-    constructor(canvas: Canvas, camera: Camera, instances: Instance[]) {
-        this.canvas = canvas;
-        this.camera = camera;
-        this.instances = instances;
-        this.cameraView = this.camera.view();
-        this.cameraProjection = this.camera.getProjectionMatrix();
-        this.xScreenMultiplier = this.canvas.width / this.canvas.aspect;
-        this.yScreenMultiplier = this.canvas.height / this.canvas.aspect;
-    }
+    // constructor(canvas: Canvas, camera: Camera, instances: Instance[]) {
+    //     this.canvas = canvas;
+    //     this.camera = camera;
+    //     this.instances = instances;
+    //     this.cameraView = this.camera.view();
+    //     this.cameraProjection = this.camera.getProjectionMatrix();
+    //     this.xScreenMultiplier = this.canvas.width / this.canvas.aspect;
+    //     this.yScreenMultiplier = this.canvas.height / this.canvas.aspect;
+    // }
 
     backfaceCulling(normal: Vector4): boolean {
         return normal.dot(this.cameraDirection) > 0;
@@ -103,32 +103,32 @@ export class VertexShader {
         return [screenVertices, polygons];
     }
 
-    getOutCodes(vANDC: Vector4, vBNDC: Vector4): number[] | null {
-        function computeCode(x: number, y: number, z: number) {
-            let code = 0;
-            if (x < -1) code |= 0b100000; 
-            if (x >  1) code |= 0b010000;
-            if (y < -1) code |= 0b001000;
-            if (y >  1) code |= 0b000100;
-            if (z < -1) code |= 0b000010;
-            if (z >  1) code |= 0b000001;
-            return code;
-        }
-
-        const aCode = computeCode(vANDC.x, vANDC.y, vANDC.z);
-        const bCode = computeCode(vBNDC.x, vBNDC.y, vBNDC.z);
-
-        if ((aCode & bCode) !== 0) { return null; }
-        return [aCode, bCode];        
+    getOutCode(vNDC: Vector4): number {
+        const x = vNDC.x, y = vNDC.y, z = vNDC.z;
+        let code = 0;
+        if (x < -1) code |= 0b100000; 
+        if (x >  1) code |= 0b010000;
+        if (y < -1) code |= 0b001000;
+        if (y >  1) code |= 0b000100;
+        if (z < -1) code |= 0b000010;
+        if (z >  1) code |= 0b000001;
+        return code;     
     }
 
-    static clippLine(vANDC: Vector4, vBNDC: Vector4): Vector4[] | null {
+    clippLine(vANDC: Vector4, vBNDC: Vector4): Vector4[] | null {
+        const aCode = this.getOutCode(vANDC);
+        const bCode = this.getOutCode(vBNDC);
+
+        if ((aCode & bCode) !== 0) return null; // completely outside
+
         const xA = vANDC.x, xB = vBNDC.x;
         const yA = vANDC.y, yB = vBNDC.y;
         const zA = vANDC.z, zB = vBNDC.z;
         const xMin = -1, xMax = 1;
         const yMin = -1, yMax = 1;
         const zMin = -1, zMax = 1;
+        var tIn = 0, tOut = 1;
+        var intersections = [];
 
         const p = [
             -(xB - xA), xB - xA,
@@ -142,42 +142,61 @@ export class VertexShader {
             zA - zMin, zMax - zA
         ];
 
-        let tIn = 0;
-        let tOut = 1;
-
         for (let i = 0; i < 6; i++) {
-            if (p[i] === 0) {
-                if (q[i] < 0) {
-                    return null;
-                }
+            const t = q[i] / p[i];
+            if (p[i] < 0) {
+                tIn = Math.max(tIn, t);
             } else {
-                const t = q[i] / p[i];
-                if (p[i] < 0) {
-                    tIn = Math.max(tIn, t);
-                } else {
-                    tOut = Math.min(tOut, t);
-                }
+                tOut = Math.min(tOut, t);
             }
-            if (tIn > tOut) {
-                return null;
+            if (tIn > tOut) return null;
+        }
+
+        var vA = new Vector4(xA + tIn * (xB - xA), yA + tIn * (yB - yA), zA + tIn * (zB - zA));
+        var vB = new Vector4(xA + tOut * (xB - xA),yA + tOut * (yB - yA),zA + tOut * (zB - zA));
+
+        if (!vA.equal(vANDC)) intersections.push(vA); else intersections.push(null);
+        if (!vB.equal(vBNDC)) intersections.push(vB); else intersections.push(null);
+    
+        return intersections;
+    }
+
+    polygonIntersection(vA: Vector4, vB: Vector4, vC: Vector4) {
+        var [a, b] = this.clippLine(vA, vB) || [null, null];
+        var [c, d] = this.clippLine(vB, vC) || [null, null];
+        var [e, f] = this.clippLine(vC, vA) || [null, null];
+
+        if (this.getOutCode(vA) !== 0) vA = null;
+        if (this.getOutCode(vB) !== 0) vB = null;
+        if (this.getOutCode(vC) !== 0) vC = null;
+
+        var vertices: Vector4[] = [vA,a,b,vB,c,d,vC,e,f];
+        vertices = vertices.filter(vertex => vertex !== null);
+        var polygons: Polygon[] = [];
+        var indexes: number[] = [];
+
+        for (var i = 0; i < vertices.length; i++) {
+            indexes.push(i);
+            if (indexes.length === 3) {
+                polygons.push(new Polygon(indexes[0], indexes[1], indexes[2]));
+                indexes = [i];
             }
         }
-    
-        return [
-            new Vector4(
-                xA + tIn * (xB - xA),
-                yA + tIn * (yB - yA),
-                zA + tIn * (zB - zA)
-            ),
-            new Vector4(
-                xA + tOut * (xB - xA),
-                yA + tOut * (yB - yA),
-                zA + tOut * (zB - zA)
-            )
-        ];
+        if (indexes.length === 2) {
+            polygons.push(new Polygon(indexes[0], indexes[1], 0));
+        }
+        if (vertices.length === 6) polygons.push(new Polygon(0, 2, 4));
+        return [vertices, polygons];
     }
 }
 
+
+var a = new Vector4(-0.5, -1.5, 1);
+var b = new Vector4(1.5, 0.5, -1.5);
+var c = new Vector4(0, 1.5, 0.5);
+
+
+console.log(new VertexShader().polygonIntersection(a,b,c));
 
 
 
