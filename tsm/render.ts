@@ -9,98 +9,64 @@ import { Draw } from "./draw";
 import { IModel, Model } from "./model";
 import { Color } from "./color";
 import { Mesh } from "./mesh";
+import { VertexShader } from "./vertexShader";
 
 export class Render {
     static coordinatesSystem: 'RHS' | 'LHS' = 'RHS';
-    private static cameraDirection = this.coordinatesSystem === 'RHS' ? new Vector4(0, 0, -1) : new Vector4(0, 0, 1);
     static drawMethod: 'wireframe' | 'filled' | 'shaded' | 'gradient' = 'filled';
     static drawOutlines: boolean = true;
     static renderInstance: Render;
     canvas: Canvas;
     camera: Camera;
     instances: Instance[];
+    vertexShader: VertexShader;
     
     constructor(canvas: Canvas, camera: Camera, instances: Instance[]) {
         this.canvas = canvas;
         this.camera = camera;
         this.instances = instances;
+        this.vertexShader = new VertexShader( this.canvas, this.camera)
     }
 
     static initialize(canvas: Canvas, camera: Camera, instances: Instance[]) {
         this.renderInstance = new Render(canvas, camera, instances);
     }
 
-    private screenCoordinates(view: Vector4) {
-        return new Vector3(
-            (view.x * this.canvas.width / this.canvas.aspect)|0,
-           -(view.y * this.canvas.height / this.canvas.aspect)|0,
-            view.z
-        ); 
-    }
-
-    private perspectiveDivision(ndc: Vector4) {
-        if (ndc.w !== 0) {
-            const x = ndc.x / ndc.w;
-            const y = ndc.y / ndc.w;
-            const z = ndc.z / ndc.w;
-            return this.screenCoordinates(new Vector4(x, y, z, 1));
-        }
-        throw new Error("W component of the vector is 0.")
-    }
-
-    private backfaceCulling(normal): boolean {
-        const dot = normal.dot(Render.cameraDirection);
-        return dot > 0 ? true : false;
-    }
-
-    model(camera: Camera, instance: Instance) {
-        const viewed: Vector4[] = [];
-        const cameraView: Matrix4 = camera.view();
-        const cameraProjection: Matrix4 = camera.getProjectionMatrix();
-
-        for (let i = 0; i < instance.model.vertices.length; i++) {
-            const vector: Vector3 = instance.model.vertices[i];
-            const local: Vector4 = new Vector4(vector.x, vector.y, vector.z, 1);
-            const global: Vector4 = instance.transformation.multiplyVector(local);
-            const view: Vector4 = cameraView.multiplyVector(global);
-            viewed.push(view);
-        }
-
-        if (instance.model.polygons[0] instanceof Polygon) {
-            for (let i = 0; i < instance.model.polygons.length; i++) {
-                const polygon: Polygon = instance.model.polygons[i];
-
-                if (this.backfaceCulling(polygon.calculateNormal(viewed))) {
-                    const ndcA: Vector4 = cameraProjection.multiplyVector(viewed[polygon.vA]);
-                    const ndcB: Vector4 = cameraProjection.multiplyVector(viewed[polygon.vB]);
-                    const ndcC: Vector4 = cameraProjection.multiplyVector(viewed[polygon.vC]);
-                    const screenA: Vector3 = this.perspectiveDivision(ndcA);
-                    const screenB: Vector3 = this.perspectiveDivision(ndcB);
-                    const screenC: Vector3 = this.perspectiveDivision(ndcC);
-
-                    switch(Render.drawMethod) {
-                        case 'wireframe': 
-                            Draw.triangle.wireframe(screenA, screenB, screenC, polygon.cA.rgbaArray);
-                            break;
-                        case 'filled': 
-                            Draw.triangle.filled(screenA, screenB, screenC, polygon.cA.rgbaArray);
-                            break;
-                        case 'gradient': 
-                            Draw.triangle.gradient(screenA, screenB, screenC, polygon.cA.rgbaArray, polygon.cB.rgbaArray, polygon.cC.rgbaArray);
-                            break;
-                    }
-    
-                    if (Render.drawOutlines) {
-                        Draw.triangle.wireframe(screenA, screenB, screenC, [0,255,255,255], false);
-                    }
-                }
-            }
-        }
-    }
-
-    scene(camera: Camera, instances: IInstance[]) {
+    scene(instances: IInstance[]) {
         for (let i = 0; i < instances.length; i++) {
-            this.model(camera, instances[i]);
+            this.model(instances[i]);
+        }
+    }
+
+    model(instance: Instance) {
+        const modelData = this.vertexShader.getScreenVertices(instance);
+        if (modelData !== null) {
+            this.represent(modelData);
+        }
+    }
+
+    represent(modelData: [Vector3[], Polygon[]]): void {
+        const vertices: Vector3[] = modelData[0];
+        const polygons: Polygon[] = modelData[1];
+        for (var i = 0; i < polygons.length; i++) {
+            const polygon = polygons[i]
+            var screenA = vertices[polygon.vA];
+            var screenB = vertices[polygon.vB];
+            var screenC = vertices[polygon.vC];
+            switch (Render.drawMethod) {
+                case 'wireframe':
+                    Draw.triangle.wireframe(screenA, screenB, screenC, polygon.cA.rgbaArray);
+                    break;
+                case 'filled':
+                    Draw.triangle.filled(screenA, screenB, screenC, polygon.cA.rgbaArray);
+                    break;
+                case 'gradient':
+                    Draw.triangle.gradient(screenA, screenB, screenC, polygon.cA.rgbaArray, polygon.cB.rgbaArray, polygon.cC.rgbaArray);
+                    break;
+            }
+            if (Render.drawOutlines) {
+                Draw.triangle.wireframe(screenA, screenB, screenC, [0, 255, 255, 255], false);
+            }
         }
     }
 
@@ -109,7 +75,7 @@ export class Render {
             throw new Error('Render instance is not initialized.');
         }
         this.renderInstance.canvas.clear();
-        this.renderInstance.scene(this.renderInstance.camera, this.renderInstance.instances);
+        this.renderInstance.scene(this.renderInstance.instances);
         this.renderInstance.canvas.update();
     }
 }

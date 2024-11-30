@@ -202,7 +202,7 @@ export class Vector4 extends AbstractVector<Vector4> {
     }
 
     dot(v4: Vector4): number {
-        return this.x * v4.x + this.y * v4.y + this.z * v4.z + this.w* v4.w;
+        return this.x * v4.x + this.y * v4.y + this.z * v4.z;
     }
 
     cross(v4: Vector4): Vector4 {
@@ -217,7 +217,7 @@ export class Vector4 extends AbstractVector<Vector4> {
     angle(v4: Vector4): number {
         const lengths = this.length() * v4.length();
         if (lengths !== 0) {
-            return Math.acos(this.dot(v4) / lengths);
+            return Math.acos(this.dot(v4) / lengths) * 180 / Math.PI;
         }
         throw new Error('Angle of zero-length vector cannot be calculated.');
     }
