@@ -10,6 +10,8 @@ import { IModel, Model } from "./model";
 import { Color } from "./color";
 import { Mesh } from "./mesh";
 import { VertexShader } from "./vertexShader";
+import { Rasterizer, IFragment } from "./rasterizer";
+import { FragmentShader } from "./fragmentShader";
 
 export class Render {
     static coordinatesSystem: 'RHS' | 'LHS' = 'RHS';
@@ -20,12 +22,16 @@ export class Render {
     camera: Camera;
     instances: Instance[];
     vertexShader: VertexShader;
+    rasterizer: Rasterizer;
+    fragmentShader: FragmentShader
     
     constructor(canvas: Canvas, camera: Camera, instances: Instance[]) {
         this.canvas = canvas;
         this.camera = camera;
         this.instances = instances;
-        this.vertexShader = new VertexShader( this.canvas, this.camera)
+        this.vertexShader = new VertexShader( this.canvas, this.camera);
+        this.rasterizer = new Rasterizer(this.canvas);
+        this.fragmentShader = new FragmentShader(this.canvas)
     }
 
     static initialize(canvas: Canvas, camera: Camera, instances: Instance[]) {
@@ -34,40 +40,22 @@ export class Render {
 
     scene(instances: IInstance[]) {
         for (let i = 0; i < instances.length; i++) {
-            this.model(instances[i]);
-        }
-    }
-
-    model(instance: Instance) {
-        const modelData = this.vertexShader.getScreenVertices(instance);
-        if (modelData !== null) {
-            this.represent(modelData);
+            const modelData = this.vertexShader.getScreenVertices(instances[i]);
+            if (modelData !== null) {
+                this.represent(modelData);
+            }
         }
     }
 
     represent(modelData: [Vector3[], Polygon[]]): void {
         const vertices: Vector3[] = modelData[0];
         const polygons: Polygon[] = modelData[1];
+        var fragments: IFragment[] = [];
         for (var i = 0; i < polygons.length; i++) {
             const polygon = polygons[i]
-            var screenA = vertices[polygon.vA];
-            var screenB = vertices[polygon.vB];
-            var screenC = vertices[polygon.vC];
-            switch (Render.drawMethod) {
-                case 'wireframe':
-                    Draw.triangle.wireframe(screenA, screenB, screenC, polygon.cA.rgbaArray);
-                    break;
-                case 'filled':
-                    Draw.triangle.filled(screenA, screenB, screenC, polygon.cA.rgbaArray);
-                    break;
-                case 'gradient':
-                    Draw.triangle.gradient(screenA, screenB, screenC, polygon.cA.rgbaArray, polygon.cB.rgbaArray, polygon.cC.rgbaArray);
-                    break;
-            }
-            if (Render.drawOutlines) {
-                Draw.triangle.wireframe(screenA, screenB, screenC, [0, 255, 255, 255], false);
-            }
+            fragments.push(this.rasterizer.gradientPolygon(vertices, polygon));
         }
+        this.fragmentShader.insert(fragments);
     }
 
     static main() {
@@ -82,40 +70,44 @@ export class Render {
 
 const model: IModel = new Model(
     [
-        new Vector3(-1,-1,-1),
-        new Vector3(-1, 1,-1),
-        new Vector3( 1, 1,-1),
-        new Vector3( 1,-1,-1),
-        new Vector3(-1,-1, 1),
-        new Vector3(-1, 1, 1),
-        new Vector3( 1, 1, 1),
-        new Vector3( 1,-1, 1)
+        new Vector3(-5,-3,0),
+        new Vector3(5,-3,0),
+        new Vector3(0,6,0),
+
+        // new Vector3(-1,-1,-1),
+        // new Vector3(-1, 1,-1),
+        // new Vector3( 1, 1,-1),
+        // new Vector3( 1,-1,-1),
+        // new Vector3(-1,-1, 1),
+        // new Vector3(-1, 1, 1),
+        // new Vector3( 1, 1, 1),
+        // new Vector3( 1,-1, 1)
     ],
     [
-        new Polygon(0,1,3, new Color('RGBA',[0,0,0,255]),       new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[255,0,0,255])),
-        new Polygon(3,1,2, new Color('RGBA',[255,0,0,255]),     new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[255,255,0,255])),
-        new Polygon(6,5,7, new Color('RGBA',[255,255,255,255]), new Color('RGBA',[0,255,255,255]), new Color('RGBA',[255,0,255,255])),
-        new Polygon(7,5,4, new Color('RGBA',[255,0,255,255]),   new Color('RGBA',[0,255,255,255]), new Color('RGBA',[0,0,255,255])),
-        new Polygon(5,1,4, new Color('RGBA',[0,255,255,255]),   new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,0,255,255])),
-        new Polygon(4,1,0, new Color('RGBA',[0,0,255,255]),     new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,0,0,255])),
-        new Polygon(3,2,7, new Color('RGBA',[255,0,0,255]),     new Color('RGBA',[255,255,0,255]), new Color('RGBA',[255,0,255,255])),
-        new Polygon(7,2,6, new Color('RGBA',[255,0,255,255]),   new Color('RGBA',[255,255,0,255]), new Color('RGBA',[255,255,255,255])),
-        new Polygon(2,1,5, new Color('RGBA',[255,255,0,255]),   new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,255,255,255])),
-        new Polygon(6,2,5, new Color('RGBA',[255,255,255,255]), new Color('RGBA',[255,255,0,255]), new Color('RGBA',[0,255,255,255])),
-        new Polygon(0,3,4, new Color('RGBA',[0,0,0,255]),       new Color('RGBA',[255,0,0,255]),   new Color('RGBA',[0,0,255,255])),
-        new Polygon(4,3,7, new Color('RGBA',[0,0,255,255]),     new Color('RGBA',[255,0,0,255]),   new Color('RGBA',[255,0,255,255])),   
+        new Polygon(0,1,2, new Color('RGBA',[255,0,0,255]), new Color('RGBA',[0,255,0,255]), new Color('RGBA',[0,0,255,255]))
+
+        // new Polygon(0,1,3, new Color('RGBA',[0,0,0,255]),       new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[255,0,0,255])),
+        // new Polygon(3,1,2, new Color('RGBA',[255,0,0,255]),     new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[255,255,0,255])),
+        // new Polygon(6,5,7, new Color('RGBA',[255,255,255,255]), new Color('RGBA',[0,255,255,255]), new Color('RGBA',[255,0,255,255])),
+        // new Polygon(7,5,4, new Color('RGBA',[255,0,255,255]),   new Color('RGBA',[0,255,255,255]), new Color('RGBA',[0,0,255,255])),
+        // new Polygon(5,1,4, new Color('RGBA',[0,255,255,255]),   new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,0,255,255])),
+        // new Polygon(4,1,0, new Color('RGBA',[0,0,255,255]),     new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,0,0,255])),
+        // new Polygon(3,2,7, new Color('RGBA',[255,0,0,255]),     new Color('RGBA',[255,255,0,255]), new Color('RGBA',[255,0,255,255])),
+        // new Polygon(7,2,6, new Color('RGBA',[255,0,255,255]),   new Color('RGBA',[255,255,0,255]), new Color('RGBA',[255,255,255,255])),
+        // new Polygon(2,1,5, new Color('RGBA',[255,255,0,255]),   new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,255,255,255])),
+        // new Polygon(6,2,5, new Color('RGBA',[255,255,255,255]), new Color('RGBA',[255,255,0,255]), new Color('RGBA',[0,255,255,255])),
+        // new Polygon(0,3,4, new Color('RGBA',[0,0,0,255]),       new Color('RGBA',[255,0,0,255]),   new Color('RGBA',[0,0,255,255])),
+        // new Polygon(4,3,7, new Color('RGBA',[0,0,255,255]),     new Color('RGBA',[255,0,0,255]),   new Color('RGBA',[255,0,255,255])),   
     ]
 );
 
-var instance: IInstance = new Instance(
-    new Mesh().sphere(),
-    new Vector3(0,0,0),
-    new Matrix4,
-    new Vector3(6,6,6)
-);
-
 const instances: IInstance[] = [
-    instance
+    new Instance(
+        model,
+        new Vector3(0,0,0),
+        new Matrix4,
+        new Vector3(4,4,4)
+    )
 ];
 
 let canvas = new Canvas(

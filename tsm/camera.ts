@@ -113,7 +113,7 @@ export class Camera {
         const deltaY = event.clientY - this.lastMouseY;
         const rotateSpeed = 0.5;
         const azimuth = Quaternion.fromAngleAxis(deltaX*rotateSpeed, this.getUpVector());
-        const elevation = Quaternion.fromAngleAxis(-deltaY*rotateSpeed, this.getRightVector());
+        const elevation = Quaternion.fromAngleAxis(deltaY*rotateSpeed, this.getRightVector());
         this.rotationQuaternion = azimuth.multiplyQuaternion(elevation).multiplyQuaternion(this.rotationQuaternion).normalize();
         this.updateOrientationVectors();
         this.updateCameraPosition();
