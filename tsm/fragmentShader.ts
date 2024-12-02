@@ -1,4 +1,5 @@
 import { Canvas } from "./canvas";
+import { Light } from "./light";
 import { IFragment } from "./rasterizer";
 
 export class FragmentShader {
@@ -10,7 +11,7 @@ export class FragmentShader {
         this.canvas = canvas;
     }
 
-    insert(fragments: IFragment[]) {
+    insert(fragments: IFragment[], light: Light) {
         for (var i = 0; i < fragments.length; i++) {
             var fragment = fragments[i];
             for (var j = 0; j < fragment.screenCoordinates.length; j++) {
@@ -20,6 +21,7 @@ export class FragmentShader {
                 } else {
                     color = fragment.colors[j];
                 }
+                color = Light.applyAmbient(color, light.attributes);
                 this.canvas.putPixel(fragment.screenCoordinates[j][0], fragment.screenCoordinates[j][1], color);
             }
         }

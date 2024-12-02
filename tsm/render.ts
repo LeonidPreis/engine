@@ -12,6 +12,7 @@ import { Mesh } from "./mesh";
 import { VertexShader } from "./vertexShader";
 import { Rasterizer, IFragment } from "./rasterizer";
 import { FragmentShader } from "./fragmentShader";
+import { Light, IAmbient } from "./light";
 
 export class Render {
     static coordinatesSystem: 'RHS' | 'LHS' = 'RHS';
@@ -21,21 +22,23 @@ export class Render {
     canvas: Canvas;
     camera: Camera;
     instances: Instance[];
+    lights: Light;
     vertexShader: VertexShader;
     rasterizer: Rasterizer;
     fragmentShader: FragmentShader
     
-    constructor(canvas: Canvas, camera: Camera, instances: Instance[]) {
+    constructor(canvas: Canvas, camera: Camera, instances: Instance[], lights: Light) {
         this.canvas = canvas;
         this.camera = camera;
         this.instances = instances;
+        this.lights = lights;
         this.vertexShader = new VertexShader( this.canvas, this.camera);
         this.rasterizer = new Rasterizer(this.canvas);
-        this.fragmentShader = new FragmentShader(this.canvas)
+        this.fragmentShader = new FragmentShader(this.canvas);
     }
 
-    static initialize(canvas: Canvas, camera: Camera, instances: Instance[]) {
-        this.renderInstance = new Render(canvas, camera, instances);
+    static initialize(canvas: Canvas, camera: Camera, instances: Instance[], lights: Light) {
+        this.renderInstance = new Render(canvas, camera, instances, lights);
     }
 
     scene(instances: IInstance[]) {
@@ -55,7 +58,7 @@ export class Render {
             const polygon = polygons[i]
             fragments.push(this.rasterizer.gradientPolygon(vertices, polygon));
         }
-        this.fragmentShader.insert(fragments);
+        this.fragmentShader.insert(fragments, this.lights);
     }
 
     static main() {
@@ -70,34 +73,28 @@ export class Render {
 
 const model: IModel = new Model(
     [
-        new Vector3(-5,-3,0),
-        new Vector3(5,-3,0),
-        new Vector3(0,6,0),
-
-        // new Vector3(-1,-1,-1),
-        // new Vector3(-1, 1,-1),
-        // new Vector3( 1, 1,-1),
-        // new Vector3( 1,-1,-1),
-        // new Vector3(-1,-1, 1),
-        // new Vector3(-1, 1, 1),
-        // new Vector3( 1, 1, 1),
-        // new Vector3( 1,-1, 1)
+        new Vector3(-1,-1,-1),
+        new Vector3(-1, 1,-1),
+        new Vector3( 1, 1,-1),
+        new Vector3( 1,-1,-1),
+        new Vector3(-1,-1, 1),
+        new Vector3(-1, 1, 1),
+        new Vector3( 1, 1, 1),
+        new Vector3( 1,-1, 1)
     ],
     [
-        new Polygon(0,1,2, new Color('RGBA',[255,0,0,255]), new Color('RGBA',[0,255,0,255]), new Color('RGBA',[0,0,255,255]))
-
-        // new Polygon(0,1,3, new Color('RGBA',[0,0,0,255]),       new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[255,0,0,255])),
-        // new Polygon(3,1,2, new Color('RGBA',[255,0,0,255]),     new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[255,255,0,255])),
-        // new Polygon(6,5,7, new Color('RGBA',[255,255,255,255]), new Color('RGBA',[0,255,255,255]), new Color('RGBA',[255,0,255,255])),
-        // new Polygon(7,5,4, new Color('RGBA',[255,0,255,255]),   new Color('RGBA',[0,255,255,255]), new Color('RGBA',[0,0,255,255])),
-        // new Polygon(5,1,4, new Color('RGBA',[0,255,255,255]),   new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,0,255,255])),
-        // new Polygon(4,1,0, new Color('RGBA',[0,0,255,255]),     new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,0,0,255])),
-        // new Polygon(3,2,7, new Color('RGBA',[255,0,0,255]),     new Color('RGBA',[255,255,0,255]), new Color('RGBA',[255,0,255,255])),
-        // new Polygon(7,2,6, new Color('RGBA',[255,0,255,255]),   new Color('RGBA',[255,255,0,255]), new Color('RGBA',[255,255,255,255])),
-        // new Polygon(2,1,5, new Color('RGBA',[255,255,0,255]),   new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,255,255,255])),
-        // new Polygon(6,2,5, new Color('RGBA',[255,255,255,255]), new Color('RGBA',[255,255,0,255]), new Color('RGBA',[0,255,255,255])),
-        // new Polygon(0,3,4, new Color('RGBA',[0,0,0,255]),       new Color('RGBA',[255,0,0,255]),   new Color('RGBA',[0,0,255,255])),
-        // new Polygon(4,3,7, new Color('RGBA',[0,0,255,255]),     new Color('RGBA',[255,0,0,255]),   new Color('RGBA',[255,0,255,255])),   
+        new Polygon(0,1,3, new Color('RGBA',[0,0,0,255]),       new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[255,0,0,255])),
+        new Polygon(3,1,2, new Color('RGBA',[255,0,0,255]),     new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[255,255,0,255])),
+        new Polygon(6,5,7, new Color('RGBA',[255,255,255,255]), new Color('RGBA',[0,255,255,255]), new Color('RGBA',[255,0,255,255])),
+        new Polygon(7,5,4, new Color('RGBA',[255,0,255,255]),   new Color('RGBA',[0,255,255,255]), new Color('RGBA',[0,0,255,255])),
+        new Polygon(5,1,4, new Color('RGBA',[0,255,255,255]),   new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,0,255,255])),
+        new Polygon(4,1,0, new Color('RGBA',[0,0,255,255]),     new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,0,0,255])),
+        new Polygon(3,2,7, new Color('RGBA',[255,0,0,255]),     new Color('RGBA',[255,255,0,255]), new Color('RGBA',[255,0,255,255])),
+        new Polygon(7,2,6, new Color('RGBA',[255,0,255,255]),   new Color('RGBA',[255,255,0,255]), new Color('RGBA',[255,255,255,255])),
+        new Polygon(2,1,5, new Color('RGBA',[255,255,0,255]),   new Color('RGBA',[0,255,0,255]),   new Color('RGBA',[0,255,255,255])),
+        new Polygon(6,2,5, new Color('RGBA',[255,255,255,255]), new Color('RGBA',[255,255,0,255]), new Color('RGBA',[0,255,255,255])),
+        new Polygon(0,3,4, new Color('RGBA',[0,0,0,255]),       new Color('RGBA',[255,0,0,255]),   new Color('RGBA',[0,0,255,255])),
+        new Polygon(4,3,7, new Color('RGBA',[0,0,255,255]),     new Color('RGBA',[255,0,0,255]),   new Color('RGBA',[255,0,255,255])),   
     ]
 );
 
@@ -110,12 +107,14 @@ const instances: IInstance[] = [
     )
 ];
 
+let ambient = new Light('AMBIENT', {color: new Color('RGBA',[255,255,255,255]), intensity: 0.75} as IAmbient);
+
 let canvas = new Canvas(
     document.documentElement.clientWidth,
     document.documentElement.clientHeight,
     document.getElementsByClassName('canvas-container')[0] as HTMLElement);
 let draw = new Draw(canvas);
 let camera = new Camera(canvas, new Vector4(0,0,0), new Vector4(50,50,50), 0.1, 500, 90);
-let render = Render.initialize(canvas, camera, instances);
+let render = Render.initialize(canvas, camera, instances, ambient);
 
 Render.main();

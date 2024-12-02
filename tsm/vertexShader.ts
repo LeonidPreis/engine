@@ -7,8 +7,8 @@ import { Polygon } from "./polygon";
 import { Model } from "./model";
 
 export class VertexShader {
-    private coordinatesSystem: 'RHS' | 'LHS' = 'RHS';
-    private cameraDirection: Vector4 = this.coordinatesSystem === 'RHS' ? new Vector4(0, 0, -1) : new Vector4(0, 0, 1);
+    private coordinatesSystem: 'RHS' | 'LHS';
+    private cameraDirection: Vector4;
     private backFaceCullingEnabled: boolean = true;
     canvas: Canvas;
     camera: Camera;
@@ -22,7 +22,7 @@ export class VertexShader {
         this.camera = camera;
         this.cameraProjection = this.camera.getProjectionMatrix();
         this.coordinatesSystem = 'RHS';
-        this.cameraDirection = this.coordinatesSystem === 'RHS' ? new Vector4(0, 0, -1) : new Vector4(0, 0, 1);
+        this.cameraDirection = this.coordinatesSystem === 'RHS' ? new Vector4(0, 0, 1) : new Vector4(0, 0, -1);
         this.xScreenMultiplier = this.canvas.width / this.canvas.aspect;
         this.yScreenMultiplier = this.canvas.height / this.canvas.aspect;
     }
