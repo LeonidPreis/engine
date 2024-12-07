@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 const buildDir = path.join(__dirname, 'jsm');
 
 function capitalizeFirstLetter(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+  return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
 function addJsExtensionToImports(dir) {

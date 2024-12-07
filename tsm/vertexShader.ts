@@ -3,13 +3,13 @@ import { Camera } from "./camera";
 import { Instance } from "./instance";
 import { Vector4, Vector3 } from "./vector";
 import { Matrix4 } from "./matrix";
-import { Polygon } from "./polygon";
+import { Line, Polygon } from "./polygon";
 import { Model } from "./model";
 
 export class VertexShader {
     private coordinatesSystem: 'RHS' | 'LHS';
     private cameraDirection: Vector4;
-    private backFaceCullingEnabled: boolean = true;
+    private backFaceCullingEnabled: boolean = false;
     canvas: Canvas;
     camera: Camera;
     cameraView: Matrix4;
@@ -22,7 +22,7 @@ export class VertexShader {
         this.camera = camera;
         this.cameraProjection = this.camera.getProjectionMatrix();
         this.coordinatesSystem = 'RHS';
-        this.cameraDirection = this.coordinatesSystem === 'RHS' ? new Vector4(0, 0, 1) : new Vector4(0, 0, -1);
+        this.cameraDirection = this.coordinatesSystem === 'RHS' ? new Vector4(0, 0, -1) : new Vector4(0, 0, 1);
         this.xScreenMultiplier = this.canvas.width / this.canvas.aspect;
         this.yScreenMultiplier = this.canvas.height / this.canvas.aspect;
     }
@@ -32,7 +32,7 @@ export class VertexShader {
     }
 
     localToGlobal(local: Vector4, transformation: Matrix4): Vector4 {
-        return transformation.multiplyVector(new Vector4(local.x, local.y, local.z, 1));
+        return transformation.multiplyVector(new Vector4(local.x, local.y, -local.z, 1));
     }
 
     globalToView(global: Vector4): Vector4 {
@@ -40,7 +40,7 @@ export class VertexShader {
     }
 
     viewToNDC(view: Vector4): Vector4 {
-        return this.cameraProjection.multiplyVector(view);
+        return this.camera.getProjectionMatrix().multiplyVector(view);
     }
 
     NDCToClip(ndc: Vector4): Vector3 | null{
@@ -156,7 +156,7 @@ export class VertexShader {
     }
 
     vertexUniqueness(vertex: Vector3, vertices: Vector3[], vertexMap: Map<string, number>): number {
-        const key = `${vertex.x},${vertex.y},${vertex.z}`;
+        const key = `${vertex.x.toFixed(6)}:${vertex.y.toFixed(6)}:${vertex.z.toFixed(6)}`;
         if (vertexMap.has(key)) {
             return vertexMap.get(key);
         }
@@ -166,10 +166,10 @@ export class VertexShader {
         return index;
     }
 
-    getScreenVertices(instance: Instance): [Vector3[], Polygon[]] | null {
+    getScreenVertices(instance: Instance): [Vector3[], (Polygon | Line)[]] | null {
         const viewCoordinates: Vector4[] = [];
         const screenVertices: Vector3[] = [];
-        const polygons: Polygon[] = [];
+        const polygons: (Polygon | Line)[] = [];
         const vertexMap = new Map();
 
         for (var i = 0; i < instance.model.vertices.length; i++) {
@@ -180,31 +180,51 @@ export class VertexShader {
         }
 
         for (var i = 0; i < instance.model.polygons.length; i++) {
-            const polygon: Polygon = instance.model.polygons[i];
-            const normal: Vector4 = polygon.calculateNormal(viewCoordinates);
+            const polygon: Polygon | Line = instance.model.polygons[i];
+            
+            if (polygon instanceof Polygon) {
+                const normal: Vector4 = polygon.calculateNormal(viewCoordinates);
 
-            if (this.backFaceCullingEnabled && this.backfaceCulling(normal)) {
-                polygon.normalView = normal;
-                continue;
+                if (this.backFaceCullingEnabled && this.backfaceCulling(normal)) {
+                    polygon.nA = normal;
+                    polygon.nB = normal;
+                    polygon.nC = normal;
+                    continue;
+                }
+
+                var NDCA: Vector4 = this.viewToNDC(viewCoordinates[polygon.vA]);
+                var NDCB: Vector4 = this.viewToNDC(viewCoordinates[polygon.vB]);
+                var NDCC: Vector4 = this.viewToNDC(viewCoordinates[polygon.vC]);
+                    
+                var clippA = this.NDCToClip(NDCA);
+                var clippB = this.NDCToClip(NDCB);
+                var clippC = this.NDCToClip(NDCC);
+
+                var screenA = this.clipToScreen(clippA);
+                var screenB = this.clipToScreen(clippB);
+                var screenC = this.clipToScreen(clippC);
+
+                polygon.vA = this.vertexUniqueness(screenA, screenVertices, vertexMap);
+                polygon.vB = this.vertexUniqueness(screenB, screenVertices, vertexMap);
+                polygon.vC = this.vertexUniqueness(screenC, screenVertices, vertexMap);
+
+                polygons.push(polygon);
             }
+            if (polygon instanceof Line) {
+                var NDCA: Vector4 = this.viewToNDC(viewCoordinates[polygon.vA]);
+                var NDCB: Vector4 = this.viewToNDC(viewCoordinates[polygon.vB]);
+                    
+                var clippA = this.NDCToClip(NDCA);
+                var clippB = this.NDCToClip(NDCB);
 
-            var NDCA: Vector4 = this.viewToNDC(viewCoordinates[polygon.vA]);
-            var NDCB: Vector4 = this.viewToNDC(viewCoordinates[polygon.vB]);
-            var NDCC: Vector4 = this.viewToNDC(viewCoordinates[polygon.vC]);
-                
-            var clippA = this.NDCToClip(NDCA);
-            var clippB = this.NDCToClip(NDCB);
-            var clippC = this.NDCToClip(NDCC);
+                var screenA = this.clipToScreen(clippA);
+                var screenB = this.clipToScreen(clippB);
 
-            var screenA = this.clipToScreen(clippA);
-            var screenB = this.clipToScreen(clippB);
-            var screenC = this.clipToScreen(clippC);
+                polygon.vA = this.vertexUniqueness(screenA, screenVertices, vertexMap);
+                polygon.vB = this.vertexUniqueness(screenB, screenVertices, vertexMap);
 
-            const indexA = this.vertexUniqueness(screenA, screenVertices, vertexMap);
-            const indexB = this.vertexUniqueness(screenB, screenVertices, vertexMap);
-            const indexC = this.vertexUniqueness(screenC, screenVertices, vertexMap);
-
-            polygons.push(new Polygon(indexA, indexB, indexC, polygon.cA, polygon.cB, polygon.cC));
+                polygons.push(polygon);
+            }
         }
         if (screenVertices.length !== 0) {
             return [screenVertices, polygons];

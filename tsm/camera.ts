@@ -12,7 +12,7 @@ export class Camera {
     private near: number = 1e-2;
     private far: number = 1e3;
     private fovY: number = 90;
-    private projectionType: string;
+    private projectionType: 'PERSPECTIVE' | 'ORTOGRAPHIC';
     public forward: Vector4;
     private right: Vector4;
     private up: Vector4;
@@ -22,6 +22,11 @@ export class Camera {
     private lastMouseX: number;
     private lastMouseY: number;
     private isRotating: boolean;
+    private LEFT: number;
+    private RIGHT: number;
+    private TOP: number;
+    private BOTTOM: number;
+    private scale: number
 
     constructor(
         canvas: Canvas,
@@ -48,9 +53,14 @@ export class Camera {
         this.lastMouseX = 0;
         this.lastMouseY = 0;
         this.isRotating = true;
-        this.projectionType = 'PERSPECTIVE';
+        this.projectionType = 'ORTOGRAPHIC';
         this.canvas.canvas.addEventListener('wheel', this.handleScroll.bind(this), false);
         this.canvas.canvas.addEventListener('mousedown', this.startRotation.bind(this), false);
+        this.LEFT = -this.canvas.width / 2;
+        this.RIGHT = this.canvas.width / 2;
+        this.TOP = this.canvas.height / 2;
+        this.BOTTOM = -this.canvas.height / 2;
+        this.scale = 1;
     }
 
     getRightVector(): Vector4 {
@@ -87,6 +97,7 @@ export class Camera {
         const delta = event.deltaY;
         const increment = delta < 0 ? 1.1 : 0.9;
         this.radius *= increment;
+        this.scale *= increment;
         this.position = this.target.subtract(this.forward.multiplyScalar(this.radius))
         this.updateOrientationVectors();
         Render.main();
@@ -158,13 +169,20 @@ export class Camera {
         switch (this.projectionType) {
             case 'PERSPECTIVE':
                 return new Matrix4(
-                    1/(Math.tan(this.fovY/2)*this.canvas.aspect),0,                  0,                  0,
-                    0,   1/Math.tan(this.fovY/2),                0,                                      0,
-                    0,   0,  (this.far)/(this.far-this.near),   -(this.far*this.near)/(this.far-this.near),
-                    0,                                           0,                  1,                  0
+                    1/(Math.tan(this.fovY/2)*this.canvas.aspect),0,                                   0,                                      0,
+                    0,                                           1/Math.tan(this.fovY/2),             0,                                      0,
+                    0,                                           0,  (this.far)/(this.far-this.near),-(this.far*this.near)/(this.far-this.near),
+                    0,                                           0,                                   1,                                      0
+                );
+            case 'ORTOGRAPHIC':
+                return new Matrix4(
+                    this.scale*(2/(this.RIGHT-this.LEFT)), 0,                                     0,                                   this.scale*(-(this.RIGHT+this.LEFT)/(this.RIGHT-this.LEFT)),
+                    0,                                     this.scale*(2/(this.TOP-this.BOTTOM)), 0,                                   this.scale*(-(this.TOP+this.BOTTOM)/(this.TOP-this.BOTTOM)),
+                    0,                                     0,                                     this.scale*(-2/(this.far-this.near)),this.scale*(-(this.far+this.near)/(this.far-this.near)),
+                    0,                                     0,                                     0,                                   1
                 );
             default:
-                throw new Error(`Unknown projection type: ${this.projectionType}`);
+                throw new Error(`Unknown projection type: ${this.projectionType}.\nUse "ORTOGRAPHIC" or "PERSPECTIVE".`);
         }
     }
 }

@@ -1,11 +1,12 @@
 import { Canvas } from "./canvas";
 import { Interpolation } from "./interpolation";
-import { Polygon } from "./polygon";
+import { Polygon, Line } from "./polygon";
 import { Vector4, Vector3 } from "./vector";
 
 export interface IFragment {
     screenCoordinates: number[];
     colors: [number, number, number, number][] | [number, number, number, number];
+    polygonIndex: number;
     normals?: Vector4[];
 }
 
@@ -17,7 +18,109 @@ export class Rasterizer {
         canvas: Canvas,
     ) {
         this.canvas = canvas;
-        this.depthEnabled = true;
+        this.depthEnabled = false;
+    }
+
+    filledLine(vertices: Vector3[], line: Line) {
+        var vA = vertices[line.vA];
+        var vB = vertices[line.vB];
+        var screenCoordinates = [];
+        if (Math.abs(vB.x - vA.x) > Math.abs(vB.y - vA.y)) {
+            if (vA.x > vB.x) {[vA, vB] = [vB, vA];}
+            var yi = Interpolation.linear(vA.x, vA.y, vB.x, vB.y);
+            if (this.depthEnabled) {
+                var zi = Interpolation.linear(vA.x, vA.z, vB.x, vB.z);
+            }
+            for (var x = vA.x; x <= vB.x; x++) {
+                var y = yi[(x - vA.x) | 0];
+                if (this.depthEnabled && !this.canvas.updateNearestZ(x, y, zi[(x - vA.x) | 0])) {
+                    continue;
+                }
+                screenCoordinates.push([x, y]);
+            }
+        } else {
+            if (vA.y > vB.y) {[vA, vB] = [vB, vA];}
+            var xi = Interpolation.linear(vA.y, vA.x, vB.y, vB.x);
+            if (this.depthEnabled) {
+                var zi = Interpolation.linear(vA.y, vA.z, vB.y, vB.z);
+            }
+            for (var y = vA.y; y <= vB.y; y++) {
+                var x = xi[(y - vA.y) | 0];
+                if (this.depthEnabled && !this.canvas.updateNearestZ(x, y, zi[(y - vA.y) | 0])) {
+                    continue;
+                }
+                screenCoordinates.push([x, y]);
+            }
+        }
+
+        return {
+            screenCoordinates: screenCoordinates,
+            colors: line.cA.rgbaArray
+        } as IFragment;
+    }
+
+    gradientLine(vertices: Vector3[], line: Line) {
+        var vA = vertices[line.vA];
+        var vB = vertices[line.vB];
+        var cA = line.cA.rgbaArray;
+        var cB = line.cB.rgbaArray;
+
+        var screenCoordinates = [];
+        var colors = [];
+        if (Math.abs(vB.x - vA.x) > Math.abs(vB.y - vA.y)) {
+            if (vA.x > vB.x) {[vA, vB] = [vB, vA]; [cA, cB] = [cB, cA];}
+            var yi = Interpolation.linear(vA.x, vA.y,  vB.x, vB.y);
+            var ri = Interpolation.linear(vA.x, cA[0], vB.x, cB[0]);
+            var gi = Interpolation.linear(vA.x, cA[1], vB.x, cB[1]);
+            var bi = Interpolation.linear(vA.x, cA[2], vB.x, cB[2]);
+            var ai = Interpolation.linear(vA.x, cA[3], vB.x, cB[3]);
+            if (this.depthEnabled) {
+                var zi = Interpolation.linear(vA.x, vA.z, vB.x, vB.z);
+            }
+            for (var x = vA.x; x <= vB.x; x++) {
+                var y = yi[(x - vA.x) | 0];
+                var color: [number, number, number, number] = [
+                    ri[(x - vA.x) | 0],
+                    gi[(x - vA.x) | 0],
+                    bi[(x - vA.x) | 0],
+                    ai[(x - vA.x) | 0]
+                ];
+                if (this.depthEnabled && !this.canvas.updateNearestZ(x, y, zi[(x - vA.x) | 0])) {
+                    continue;
+                }
+                screenCoordinates.push([x, y]);
+                colors.push(color)
+            }
+        } else {
+            if (vA.y > vB.y) {[vA, vB] = [vB, vA]; [cA, cB] = [cB, cA];}
+            var xi = Interpolation.linear(vA.y, vA.x,  vB.y, vB.x);
+            var ri = Interpolation.linear(vA.y, cA[0], vB.y, cB[0]);
+            var gi = Interpolation.linear(vA.y, cA[1], vB.y, cB[1]);
+            var bi = Interpolation.linear(vA.y, cA[2], vB.y, cB[2]);
+            var ai = Interpolation.linear(vA.y, cA[3], vB.y, cB[3]);
+            if (this.depthEnabled) {
+                var zi = Interpolation.linear(vA.y, vA.z, vB.y, vB.z);
+            }
+            for (var y = vA.y; y <= vB.y; y++) {
+                var x = xi[(y - vA.y) | 0];
+                var color: [number, number, number, number] = [
+                    ri[(y - vA.y) | 0],
+                    gi[(y - vA.y) | 0],
+                    bi[(y - vA.y) | 0],
+                    ai[(y - vA.y) | 0]
+                ];
+                if (this.depthEnabled && !this.canvas.updateNearestZ(x, y, zi[(x - vA.x) | 0])) {
+                    continue;
+                }
+                screenCoordinates.push([x, y]);
+                colors.push(color)
+            }
+        }
+
+        return {
+            screenCoordinates: screenCoordinates,
+            colors: colors
+        } as IFragment;
     }
 
     fillPolygon(vertices: Vector3[], polygon: Polygon) {
@@ -58,13 +161,13 @@ export class Rasterizer {
         } as IFragment;
     }
 
-    gradientPolygon(vertices: Vector3[], polygon: Polygon) {
-        var vA = vertices[polygon.vA];
-        var vB = vertices[polygon.vB];
-        var vC = vertices[polygon.vC];
-        var cA = polygon.cA.rgbaArray;
-        var cB = polygon.cB.rgbaArray;
-        var cC = polygon.cC.rgbaArray;
+    gradientPolygon(vertices: Vector3[], polygons: Polygon[], index: number) {
+        var vA = vertices[polygons[index].vA];
+        var vB = vertices[polygons[index].vB];
+        var vC = vertices[polygons[index].vC];
+        var cA = polygons[index].cA.rgbaArray;
+        var cB = polygons[index].cB.rgbaArray;
+        var cC = polygons[index].cC.rgbaArray;
 
         if (vB.y < vA.y) {[vA,vB] = [vB,vA]; [cA,cB] = [cB,cA];}
         if (vC.y < vA.y) {[vA,vC] = [vC,vA]; [cA,cC] = [cC,cA];}
@@ -112,10 +215,11 @@ export class Rasterizer {
                 colors.push(color);
             }
         }
-        
+
         return {
             screenCoordinates: screenCoordinates,
-            colors: colors
+            colors: colors,
+            polygonIndex: index
         } as IFragment;
     }
 }
