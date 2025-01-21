@@ -6,6 +6,21 @@ export interface IColor {
 export class Color implements IColor {
     format: 'RGBA' | 'CMYK' | 'HSL' | 'HSV' | 'HSI' | 'HEX' = 'RGBA';
     data: string | [number, number, number] | [number, number, number, number];
+    static black: Color = new Color('RGBA',[0,0,0,255]);
+    static white: Color = new Color('RGBA',[255,255,255,255]);
+    static red: Color = new Color('RGBA',[255,0,0,255]);
+    static yellow: Color = new Color('RGBA',[255,255,0,255]);
+    static green: Color = new Color('RGBA',[0,255,0,255]);
+    static cyan: Color = new Color('RGBA',[0,255,255,255]);
+    static blue: Color = new Color('RGBA',[0,0,255,255]);
+    static magenta: Color = new Color('RGBA',[255,0,255,255]);
+    static gray: Color = new Color('RGBA',[128,128,128,255]);
+    static gold: Color = new Color('RGBA',[255,215,0,255]);
+    static brown: Color = new Color('RGBA',[170,70,20,255]);
+    static navy: Color = new Color('RGBA',[0,0,128,255]);
+    static silver: Color = new Color('RGBA',[190,190,190,255]);
+    static orange: Color = new Color('RGBA',[255,165,0,255]);
+    static purple: Color = new Color('RGBA',[128,0,128,255]);
 
     constructor(
         format: 'RGBA' | 'CMYK' | 'HSL' | 'HSV' | 'HSI' | 'HEX' = 'RGBA',

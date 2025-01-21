@@ -53,7 +53,7 @@ export class Camera {
         this.lastMouseX = 0;
         this.lastMouseY = 0;
         this.isRotating = true;
-        this.projectionType = 'ORTOGRAPHIC';
+        this.projectionType = 'PERSPECTIVE';
         this.canvas.canvas.addEventListener('wheel', this.handleScroll.bind(this), false);
         this.canvas.canvas.addEventListener('mousedown', this.startRotation.bind(this), false);
         this.LEFT = -this.canvas.width / 2;

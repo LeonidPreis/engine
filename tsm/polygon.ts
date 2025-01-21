@@ -16,9 +16,9 @@ export class Polygon {
         vA: number,
         vB: number,
         vC: number,
-        cA: Color = new Color('RGBA', [255, 0, 255, 255]),
-        cB: Color = new Color('RGBA', [255, 0, 255, 255]),
-        cC: Color = new Color('RGBA', [255, 0, 255, 255]),
+        cA: Color = Color.red,
+        cB: Color = Color.red,
+        cC: Color = Color.red,
         nA: Vector4 | null = null,
         nB: Vector4 | null = null,
         nC: Vector4 | null = null

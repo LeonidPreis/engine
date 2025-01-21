@@ -7,9 +7,8 @@ import { Line, Polygon } from "./polygon";
 import { Model } from "./model";
 
 export class VertexShader {
-    private coordinatesSystem: 'RHS' | 'LHS';
     private cameraDirection: Vector4;
-    private backFaceCullingEnabled: boolean = false;
+    private backFaceCullingEnabled: boolean = true;
     canvas: Canvas;
     camera: Camera;
     cameraView: Matrix4;
@@ -20,15 +19,13 @@ export class VertexShader {
     constructor(canvas: Canvas, camera: Camera) {
         this.canvas = canvas;
         this.camera = camera;
-        this.cameraProjection = this.camera.getProjectionMatrix();
-        this.coordinatesSystem = 'RHS';
-        this.cameraDirection = this.coordinatesSystem === 'RHS' ? new Vector4(0, 0, -1) : new Vector4(0, 0, 1);
+        this.cameraDirection = new Vector4(0, 0, -1);
         this.xScreenMultiplier = this.canvas.width / this.canvas.aspect;
         this.yScreenMultiplier = this.canvas.height / this.canvas.aspect;
     }
 
     backfaceCulling(normal: Vector4): boolean {
-        return normal.angle(this.cameraDirection) < 90;
+        return normal.dot(this.cameraDirection) > 0;
     }
 
     localToGlobal(local: Vector4, transformation: Matrix4): Vector4 {
@@ -186,9 +183,6 @@ export class VertexShader {
                 const normal: Vector4 = polygon.calculateNormal(viewCoordinates);
 
                 if (this.backFaceCullingEnabled && this.backfaceCulling(normal)) {
-                    polygon.nA = normal;
-                    polygon.nB = normal;
-                    polygon.nC = normal;
                     continue;
                 }
 
@@ -204,11 +198,16 @@ export class VertexShader {
                 var screenB = this.clipToScreen(clippB);
                 var screenC = this.clipToScreen(clippC);
 
-                polygon.vA = this.vertexUniqueness(screenA, screenVertices, vertexMap);
-                polygon.vB = this.vertexUniqueness(screenB, screenVertices, vertexMap);
-                polygon.vC = this.vertexUniqueness(screenC, screenVertices, vertexMap);
+                const indexA = this.vertexUniqueness(screenA, screenVertices, vertexMap);
+                const indexB = this.vertexUniqueness(screenB, screenVertices, vertexMap);
+                const indexC = this.vertexUniqueness(screenC, screenVertices, vertexMap);
+                
+                const processedPolygon = new Polygon(indexA, indexB, indexC, polygon.cA, polygon.cB, polygon.cC)
 
-                polygons.push(polygon);
+                processedPolygon.nA = normal;
+                processedPolygon.nB = normal;
+                processedPolygon.nC = normal;
+                polygons.push(processedPolygon);
             }
             if (polygon instanceof Line) {
                 var NDCA: Vector4 = this.viewToNDC(viewCoordinates[polygon.vA]);

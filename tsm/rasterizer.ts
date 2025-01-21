@@ -18,7 +18,7 @@ export class Rasterizer {
         canvas: Canvas,
     ) {
         this.canvas = canvas;
-        this.depthEnabled = false;
+        this.depthEnabled = true;
     }
 
     filledLine(vertices: Vector3[], line: Line) {
@@ -59,7 +59,7 @@ export class Rasterizer {
         } as IFragment;
     }
 
-    gradientLine(vertices: Vector3[], line: Line) {
+    gradientLine(vertices: Vector3[], line: Line, depthEnabled = this.depthEnabled) {
         var vA = vertices[line.vA];
         var vB = vertices[line.vB];
         var cA = line.cA.rgbaArray;
@@ -74,7 +74,7 @@ export class Rasterizer {
             var gi = Interpolation.linear(vA.x, cA[1], vB.x, cB[1]);
             var bi = Interpolation.linear(vA.x, cA[2], vB.x, cB[2]);
             var ai = Interpolation.linear(vA.x, cA[3], vB.x, cB[3]);
-            if (this.depthEnabled) {
+            if (depthEnabled) {
                 var zi = Interpolation.linear(vA.x, vA.z, vB.x, vB.z);
             }
             for (var x = vA.x; x <= vB.x; x++) {
@@ -85,7 +85,7 @@ export class Rasterizer {
                     bi[(x - vA.x) | 0],
                     ai[(x - vA.x) | 0]
                 ];
-                if (this.depthEnabled && !this.canvas.updateNearestZ(x, y, zi[(x - vA.x) | 0])) {
+                if (depthEnabled && !this.canvas.updateNearestZ(x, y, zi[(x - vA.x) | 0])) {
                     continue;
                 }
                 screenCoordinates.push([x, y]);
@@ -98,7 +98,7 @@ export class Rasterizer {
             var gi = Interpolation.linear(vA.y, cA[1], vB.y, cB[1]);
             var bi = Interpolation.linear(vA.y, cA[2], vB.y, cB[2]);
             var ai = Interpolation.linear(vA.y, cA[3], vB.y, cB[3]);
-            if (this.depthEnabled) {
+            if (depthEnabled) {
                 var zi = Interpolation.linear(vA.y, vA.z, vB.y, vB.z);
             }
             for (var y = vA.y; y <= vB.y; y++) {
@@ -109,7 +109,7 @@ export class Rasterizer {
                     bi[(y - vA.y) | 0],
                     ai[(y - vA.y) | 0]
                 ];
-                if (this.depthEnabled && !this.canvas.updateNearestZ(x, y, zi[(x - vA.x) | 0])) {
+                if (depthEnabled && !this.canvas.updateNearestZ(x, y, zi[(x - vA.x) | 0])) {
                     continue;
                 }
                 screenCoordinates.push([x, y]);
