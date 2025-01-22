@@ -120,4 +120,256 @@ export class Euler {
             : this.getExtrinsicRotation(cA, sA, cB, sB, cG, sG);
     }
 
-}
+    private static fromMatrixXYZ(rotation: Matrix4, intrinsic: boolean = true, epsilon: number = 1e-6) {
+        const cosBeta = Math.sqrt(rotation.m11*rotation.m11 + rotation.m12*rotation.m12);
+        var alpha, beta, gamma;
+
+        if (intrinsic) {
+            if (cosBeta > epsilon) {
+                alpha = Math.atan2(-rotation.m23, rotation.m33);
+                beta = Math.atan2(rotation.m13, cosBeta);
+                gamma = Math.atan2(-rotation.m12, rotation.m11);
+            } else {
+                alpha = 0;
+                if (rotation.m13 < 0.0) {
+                    beta = -Math.PI / 2;
+                    gamma = -Math.atan2(rotation.m21, rotation.m22);
+                } else {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m21, -rotation.m22);
+                }
+            }
+        } else {
+            if (cosBeta > epsilon) {
+                alpha = Math.atan2(-rotation.m12, rotation.m11);
+                beta = Math.atan2(rotation.m13, cosBeta);
+                gamma = Math.atan2(-rotation.m23, rotation.m33);
+            } else {
+                alpha = 0;
+                if (rotation.m13 < 0.0) {
+                    beta = -Math.PI / 2;
+                    gamma = -Math.atan2(rotation.m21, rotation.m22);
+                } else {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m21, rotation.m22);
+                }
+            }
+        }
+    
+        return new Euler(alpha, beta, gamma, RotationOrder.XYZ);
+    }
+
+    private static fromMatrixXZY(rotation: Matrix4, intrinsic: boolean = true, epsilon: number = 1e-6) {
+        const cosBeta = Math.sqrt(rotation.m11*rotation.m11 + rotation.m13*rotation.m13);
+        var alpha, beta, gamma;
+
+        if (intrinsic) {
+            if (cosBeta > epsilon) {
+                alpha = Math.atan2(rotation.m32, rotation.m22);
+                beta = Math.atan2(-rotation.m12, cosBeta);
+                gamma = Math.atan2(rotation.m13, rotation.m11);
+            } else {
+                alpha = 0;
+                if (rotation.m12 < 0.0) {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m23, rotation.m33);
+                } else {
+                    beta = -Math.PI / 2;
+                    gamma = Math.atan2(rotation.m23, rotation.m33);
+                }
+            }
+        } else {
+            if (cosBeta > epsilon) {
+                alpha = Math.atan2(rotation.m13, rotation.m11);
+                beta = Math.atan2(-rotation.m12, cosBeta);
+                gamma = Math.atan2(rotation.m32, rotation.m22);
+            } else {
+                alpha = 0;
+                if (rotation.m12 < 0.0) {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m31, rotation.m33);
+                } else {
+                    beta = -Math.PI / 2;
+                    gamma = Math.atan2(rotation.m31, rotation.m33);
+                }
+            }
+        }
+    
+        return new Euler(alpha, beta, gamma, RotationOrder.XZY);
+    }
+
+    private static fromMatrixYXZ(rotation: Matrix4, intrinsic: boolean = true, epsilon: number = 1e-6) {
+        const cosBeta = Math.sqrt(rotation.m21*rotation.m21 + rotation.m22*rotation.m22);
+        var alpha, beta, gamma;
+
+        if (intrinsic) {
+            if (cosBeta > epsilon) {
+                alpha = Math.atan2(rotation.m13, rotation.m33);
+                beta = Math.atan2(-rotation.m23, cosBeta);
+                gamma = Math.atan2(rotation.m21, rotation.m22);
+            } else {
+                alpha = 0;
+                if (rotation.m23 < 0.0) {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m31, rotation.m32);
+                } else {
+                    beta = -Math.PI / 2;
+                    gamma = Math.atan2(rotation.m31, rotation.m32);
+                }
+            }
+        } else {
+            if (cosBeta > epsilon) {
+                alpha = Math.atan2(rotation.m21, rotation.m22);
+                beta = Math.atan2(-rotation.m23, cosBeta);
+                gamma = Math.atan2(rotation.m13, rotation.m33);
+            } else {
+                alpha = 0;
+                if (rotation.m23 < 0.0) {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m12, rotation.m32);
+                } else {
+                    beta = -Math.PI / 2;
+                    gamma = Math.atan2(rotation.m12, rotation.m32);
+                }
+            }
+        }
+
+        return new Euler(alpha, beta, gamma, RotationOrder.YXZ);
+    }
+
+    private static fromMatrixYZX(rotation: Matrix4, intrinsic: boolean = true, epsilon: number = 1e-6) {
+        const cosBeta = Math.sqrt(rotation.m11*rotation.m11 + rotation.m31*rotation.m31);
+        var alpha, beta, gamma;
+
+        if (intrinsic) {
+            if (cosBeta > epsilon) {
+                alpha = Math.atan2(-rotation.m31, rotation.m11);
+                beta = Math.atan2(rotation.m21, cosBeta);
+                gamma = Math.atan2(-rotation.m23, rotation.m22);
+            } else {
+                alpha = 0;
+                if (rotation.m21 < 0.0) {
+                    beta = -Math.PI / 2;
+                    gamma = -Math.atan2(rotation.m32, rotation.m33);
+                } else {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m32, rotation.m33);
+                }
+            }
+        } else {
+            if (cosBeta > epsilon) {
+                alpha = Math.atan2(-rotation.m23, rotation.m22);
+                beta = Math.atan2(rotation.m21, cosBeta);
+                gamma = Math.atan2(-rotation.m31, rotation.m11);
+            } else {
+                alpha = 0;
+                if (rotation.m21 < 0.0) {
+                    beta = -Math.PI / 2;
+                    gamma = -Math.atan2(rotation.m23, rotation.m33);
+                } else {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m23, rotation.m33);
+                }
+            }
+        }
+
+        return new Euler(alpha, beta, gamma, RotationOrder.YZX);
+    }
+    
+    private static fromMatrixZXY(rotation: Matrix4, intrinsic: boolean = true, epsilon: number = 1e-6) {
+        const cosBeta = Math.sqrt(rotation.m31*rotation.m31 + rotation.m33*rotation.m33);
+        var alpha, beta, gamma;
+    
+        if (intrinsic) {
+            if (cosBeta > epsilon) {
+                alpha = Math.atan2(-rotation.m12, rotation.m22);
+                beta = Math.atan2(rotation.m32, cosBeta);
+                gamma = Math.atan2(-rotation.m31, rotation.m33);
+            } else {
+                alpha = 0;
+                if (rotation.m32 < 0.0) {
+                    beta = -Math.PI / 2;
+                    gamma = Math.atan2(rotation.m21, rotation.m22);
+                } else {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m21, rotation.m22);
+                }
+            }
+        } else {
+            if (cosBeta > epsilon) {
+                alpha = Math.atan2(-rotation.m31, rotation.m33);
+                beta = Math.atan2(rotation.m32, cosBeta);
+                gamma = Math.atan2(-rotation.m12, rotation.m22);
+            } else {
+                alpha = 0;
+                if (rotation.m32 < 0.0) {
+                    beta = -Math.PI / 2;
+                    gamma = Math.atan2(rotation.m21, rotation.m11);
+                } else {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m21, rotation.m11);
+                }
+            }
+        }
+    
+        return new Euler(alpha, beta, gamma, RotationOrder.ZXY);
+    }
+    
+    private static fromMatrixZYX(rotation: Matrix4, intrinsic: boolean = true, epsilon: number = 1e-6) {
+        const cosBeta = Math.sqrt(rotation.m32*rotation.m32 + rotation.m33*rotation.m33);
+        var alpha, beta, gamma;
+    
+        if (intrinsic) {
+            if (cosBeta > epsilon) { 
+                alpha = Math.atan2(rotation.m21, rotation.m11);
+                beta = Math.atan2(-rotation.m31, cosBeta);
+                gamma = Math.atan2(rotation.m32, rotation.m33);
+            } else {
+                alpha = 0;
+                if (rotation.m31 < 0.0) {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m12, rotation.m22);
+                } else {
+                    beta = -Math.PI / 2;
+                    gamma = Math.atan2(rotation.m12, rotation.m22);
+                }
+            }
+        } else {
+            if (cosBeta > epsilon) { 
+                alpha = Math.atan2(rotation.m32, rotation.m33);
+                beta = Math.atan2(-rotation.m31, cosBeta);
+                gamma = Math.atan2(rotation.m21, rotation.m11);
+            } else {
+                alpha = 0;
+                if (rotation.m31 < 0.0) {
+                    beta = Math.PI / 2;
+                    gamma = Math.atan2(rotation.m23, rotation.m22);
+                } else {
+                    beta = -Math.PI / 2;
+                    gamma = Math.atan2(rotation.m23, rotation.m22);
+                }
+            }
+        }
+    
+        return new Euler(alpha, beta, gamma, RotationOrder.ZYX);
+    }
+
+    static fromMatrix(rotation: Matrix4, order: RotationOrder = RotationOrder.XYZ, intrinsic = true, epsilon = 1e-6) {
+        switch (order) {
+            case RotationOrder.XYZ:
+                return Euler.fromMatrixXYZ(rotation, intrinsic, epsilon);
+            case RotationOrder.XZY:
+                return Euler.fromMatrixXZY(rotation, intrinsic, epsilon);
+            case RotationOrder.YXZ:
+                return Euler.fromMatrixYXZ(rotation, intrinsic, epsilon);
+            case RotationOrder.YZX:
+                return Euler.fromMatrixYZX(rotation, intrinsic, epsilon);
+            case RotationOrder.ZXY:
+                return Euler.fromMatrixZXY(rotation, intrinsic, epsilon);
+            case RotationOrder.ZYX:
+                return Euler.fromMatrixZYX(rotation, intrinsic, epsilon);
+            default:
+                throw new Error("Unknown order. Use 'XYZ', 'XZY', 'YXZ', 'YZX', 'ZXY' or 'ZYX'.");
+        }
+    }
+}   
