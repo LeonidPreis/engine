@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "outDir": "./jsm",
+    "rootDir": "./tsm",
+    "target": "ES2020",
+    "module": "ES6",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "moduleResolution": "Node",
+    "lib": ["ES2020", "DOM"]
+  },
+  "include": ["./tsm/**/*.ts"],
+  "exclude": ["./jsm/**/*"]
+}

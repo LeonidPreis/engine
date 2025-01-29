@@ -114,23 +114,23 @@ export class Quaternion {
         return new Vector4(this.x / sin, this.y / sin, this.z / sin, 1);
     }
 
-    toRoll(): number {
+    toalpha(): number {
         return -Math.atan2(2 * (this.w * this.x + this.y * this.z), 1 - 2 * (this.x * this.x + this.y * this.y));
     }
 
-    toPitch(): number {
+    tobeta(): number {
         return Math.asin(2 * (this.w * this.y - this.z * this.x));
     }
 
-    toYaw(): number {
+    togamma(): number {
         return Math.atan2(2 * (this.w * this.z + this.x * this.y), 1 - 2 * (this.y * this.y + this.z * this.z));
     }
 
     toEuler(): Euler {
         return new Euler(
-            this.toRoll() * this.degrees,
-            this.toPitch() * this.degrees,
-            this.toYaw() * this.degrees
+            this.toalpha() * this.degrees,
+            this.tobeta() * this.degrees,
+            this.togamma() * this.degrees
         );
     }
 
@@ -210,10 +210,10 @@ export class Quaternion {
 
     static fromEuler(e: Euler): Quaternion {
         const radians = Math.PI / 360;
-        const [roll, pitch, yaw] = [e.roll * radians, e.pitch * radians, e.yaw * radians];
-        const [cA, sA] = [Math.cos(roll), Math.sin(roll)];
-        const [cB, sB] = [Math.cos(pitch), Math.sin(pitch)];
-        const [cG, sG] = [Math.cos(yaw), Math.sin(yaw)];
+        const [alpha, beta, gamma] = [e.alpha * radians, e.beta * radians, e.gamma * radians];
+        const [cA, sA] = [Math.cos(alpha), Math.sin(alpha)];
+        const [cB, sB] = [Math.cos(beta), Math.sin(beta)];
+        const [cG, sG] = [Math.cos(gamma), Math.sin(gamma)];
 
         switch (e.order) {
             case 'XYZ':
@@ -272,31 +272,31 @@ export class Quaternion {
         );
     }
 
-    static rotateX(v4: Vector4, roll: number): Vector4 {
+    static rotateX(v4: Vector4, alpha: number): Vector4 {
         const qv = new Quaternion(0, v4.x, v4.y, v4.z);
-        const q = Quaternion.fromAngleAxis(roll, new Vector4(1, 0, 0, 1));
+        const q = Quaternion.fromAngleAxis(alpha, new Vector4(1, 0, 0, 1));
         const t = q.multiplyQuaternion(qv).multiplyQuaternion(q.inverse())
         return new Vector4(t.x, t.y, t.z, 1);
     }
 
-    static rotateY(v4: Vector4, pitch: number): Vector4 {
+    static rotateY(v4: Vector4, beta: number): Vector4 {
         const qv = new Quaternion(0, v4.x, v4.y, v4.z);
-        const q =  Quaternion.fromAngleAxis(pitch, new Vector4(0, 1, 0, 1));
+        const q =  Quaternion.fromAngleAxis(beta, new Vector4(0, 1, 0, 1));
         const t = q.multiplyQuaternion(qv).multiplyQuaternion(q.inverse())
         return new Vector4(t.x, t.y, t.z, 1);
     }
 
-    static rotateZ(v4: Vector4, yaw: number): Vector4 {
+    static rotateZ(v4: Vector4, gamma: number): Vector4 {
         const qv = new Quaternion(0, v4.x, v4.y, v4.z);
-        const q = Quaternion.fromAngleAxis(yaw, new Vector4(0, 0, 1, 1));
+        const q = Quaternion.fromAngleAxis(gamma, new Vector4(0, 0, 1, 1));
         const t = q.multiplyQuaternion(qv).multiplyQuaternion(q.inverse())
         return new Vector4(t.x, t.y, t.z, 1);
     }
 
-    static rotateXYZ(v4: Vector4, roll: number, pitch: number, yaw: number): Vector4 {
-        const qX = Quaternion.fromAngleAxis(roll, new Vector4(1, 0, 0, 1));
-        const qY = Quaternion.fromAngleAxis(pitch, new Vector4(0, 1, 0, 1));
-        const qZ = Quaternion.fromAngleAxis(yaw, new Vector4(0, 0, 1, 1));
+    static rotateXYZ(v4: Vector4, alpha: number, beta: number, gamma: number): Vector4 {
+        const qX = Quaternion.fromAngleAxis(alpha, new Vector4(1, 0, 0, 1));
+        const qY = Quaternion.fromAngleAxis(beta, new Vector4(0, 1, 0, 1));
+        const qZ = Quaternion.fromAngleAxis(gamma, new Vector4(0, 0, 1, 1));
         const qXYZ = qX.multiplyQuaternion(qY.multiplyQuaternion(qZ));
         const t = qXYZ.multiplyQuaternion(new Quaternion(0, v4.x, v4.y, v4.z)).multiplyQuaternion(qXYZ.inverse())
         return new Vector4(t.x, t.y, t.z, 1);
