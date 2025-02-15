@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build current file.",
+      "type": "shell",
+      "command": "tsc ${file} --sourceMap --declaration --outDir dist",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": ["$tsc"],
+      "detail": " "
+    },
+    {
+      "label": "Build project.",
+      "type": "shell",
+      "command": "tsc",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": ["$tsc"],
+      "detail": " "
+    }
+  ]
+}
