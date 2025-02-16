@@ -22,6 +22,17 @@
       },
       "problemMatcher": ["$tsc"],
       "detail": " "
+    },
+    {
+      "label": "Resolve imports.",
+      "type": "shell",
+      "command": "node resolve-imports.mjs",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "detail": " "
     }
   ]
 }
