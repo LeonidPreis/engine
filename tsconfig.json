@@ -10,7 +10,8 @@
     "declaration": true,
     "inlineSources": true,  
     "inlineSourceMap": false,
-    "removeComments": false
+    "removeComments": false,
+    "lib": ["ES2016", "DOM"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
