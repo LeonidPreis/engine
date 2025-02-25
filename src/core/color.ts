@@ -354,7 +354,7 @@ export class Color implements IColor {
     private relativeLuminance(): number {
         const [r, g, b] = this.convertTo('RGBA').data as [number, number, number, number];
 
-        function transformComponent(component: number): number {
+        const transformComponent = (component: number): number => {
             const normalized = component / 255;
             return normalized <= 0.03928
                 ? normalized / 12.92
