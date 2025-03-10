@@ -154,7 +154,7 @@ export class Quaternion {
         );
     }
 
-    private static fromIntrinsicEuler(euler: Euler): Quaternion | undefined {
+    private static fromIntrinsicEuler(euler: Euler): Quaternion {
         const [alpha, beta, gamma] = [euler.alpha / 2, euler.beta / 2, euler.gamma / 2];
         const [cA, sA] = [Math.cos(alpha), Math.sin(alpha)];
         const [cB, sB] = [Math.cos(beta),  Math.sin(beta)];
@@ -236,7 +236,7 @@ export class Quaternion {
         }
     }
 
-    private static fromExtrinsicEuler(euler: Euler): Quaternion | undefined {
+    private static fromExtrinsicEuler(euler: Euler): Quaternion {
         const [alpha, beta, gamma] = [euler.alpha / 2, euler.beta / 2, euler.gamma / 2];
         const [cA, sA] = [Math.cos(alpha), Math.sin(alpha)];
         const [cB, sB] = [Math.cos(beta),  Math.sin(beta)];
@@ -244,33 +244,81 @@ export class Quaternion {
 
         switch (euler.order) {
             case RotationOrder.XYZ:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA - sG * sB * sA,
+                    sG * cB * cA + cG * sB * sA,
+                   -sG * cB * sA + cG * sB * cA,
+                    cG * cB * sA + sG * sB * cA);
             case RotationOrder.XZY:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA + sG * sB * sA,
+                    sG * cB * cA - cG * sB * sA,
+                    cG * cB * sA - sG * sB * cA,
+                    sG * cB * sA + cG * sB * cA);
             case RotationOrder.YXZ:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA + sG * sB * sA,
+                    cG * sB * cA + sG * cB * sA,
+                   -cG * sB * sA + sG * cB * cA,
+                    cG * cB * sA - sG * sB * cA);
             case RotationOrder.YZX:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA - sG * sB * sA,
+                    cG * cB * sA + sG * sB * cA,
+                    sG * cB * cA + cG * sB * sA,
+                   -sG * cB * sA + cG * sB * cA);
             case RotationOrder.ZXY:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA - sG * sB * sA,
+                    cG * sB * cA - sG * cB * sA,
+                    cG * cB * sA + sG * sB * cA,
+                    cG * sB * sA + sG * cB * cA);
             case RotationOrder.ZYX:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA + sG * sB * sA,
+                    cG * cB * sA - sG * sB * cA,
+                    cG * sB * cA + sG * cB * sA,
+                   -cG * sB * sA + sG * cB * cA);
             case RotationOrder.XYX:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA - sG * cB * sA,
+                    cG * cB * sA + sG * cB * cA,
+                    cG * sB * cA + sG * sB * sA,
+                    -cG * sB * sA + sG * sB * cA);
             case RotationOrder.XZX:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA - sG * cB * sA,
+                    cG * cB * sA + sG * cB * cA,
+                    -sG * sB * cA + cG * sB * sA,
+                    sG * sB * sA + cG * sB * cA);
             case RotationOrder.YXY:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA - sG * cB * sA,
+                    cG * sB * cA + sG * sB * sA,
+                    cG * cB * sA + sG * cB * cA,
+                    cG * sB * sA - sG * sB * cA);
             case RotationOrder.YZY:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA - sG * cB * sA,
+                    sA * sB * cG - cA * sB * sG,
+                    cG * cB * sA + sG * cB * cA,
+                    sG * sB * sA + cG * sB * cA);
             case RotationOrder.ZXZ:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA - sG * cB * sA,
+                    cG * sB * cA + sG * sB * sA,
+                    -cG * sB * sA + sG * sB * cA,
+                    cG * cB * sA + sG * cB * cA);
             case RotationOrder.ZYZ:
-                return new Quaternion();
+                return new Quaternion(
+                    cG * cB * cA - sG * cB * sA,
+                    -sG * sB * cA + cG * sB * sA,
+                    sG * sB * sA + cG * sB * cA,
+                    cG * cB * sA + sG * cB * cA);
         }
     }
 
-    public static fromEuler(euler: Euler): Quaternion | undefined {
+    public static fromEuler(euler: Euler): Quaternion {
         return euler.intrinsic
             ? Quaternion.fromIntrinsicEuler(euler)
             : Quaternion.fromExtrinsicEuler(euler);
