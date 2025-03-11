@@ -70,8 +70,7 @@ export class Vector4 {
             return angle * 180 / Math.PI;
         } else {
             return angle;
-        }
-        
+        }  
     }
 
     public project(v4: Vector4): number {
