@@ -351,6 +351,10 @@ export class Color implements IColor {
         return new Color(targetFormat, targetData);
     }
 
+    public toArray(): Uint8Array {
+        return new Uint8Array(this.convertTo('RGBA').data as [number, number, number, number]);
+    }
+
     private relativeLuminance(): number {
         const [r, g, b] = this.convertTo('RGBA').data as [number, number, number, number];
 

@@ -4,9 +4,9 @@ import { Matrix4 } from './matrix4';
 import { Euler } from './euler';
 import { Quaternion } from './quaternion';
 
-type Position = Vector3 | Vector4;
-type Orientation = Matrix4 | Euler | Quaternion
-type Scale = Vector3 | Vector4;
+export type Position = Vector3 | Vector4;
+export type Orientation = Matrix4 | Euler | Quaternion
+export type Scale = Vector3 | Vector4;
 
 export interface ITransformation {
     get position(): Position;
@@ -72,15 +72,6 @@ export class Transformation implements ITransformation {
         );
     }
 
-    private getTranslationMatrix(): Matrix4 {
-        return new Matrix4(
-            1, 0, 0, this._position.x,
-            0, 1, 0, this._position.y,
-            0, 0, 1, this._position.z,
-            0, 0, 0,           1
-        );
-    }
-
     private getRotationMatrix(): Matrix4 {
         if (this._orientation instanceof Matrix4) {
             return this._orientation;
@@ -91,6 +82,15 @@ export class Transformation implements ITransformation {
         } else {
             throw new Error("Rotation must be either a Matrix4, Euler or Quaternion.");
         }
+    }
+
+    private getTranslationMatrix(): Matrix4 {
+        return new Matrix4(
+            1, 0, 0, this._position.x,
+            0, 1, 0, this._position.y,
+            0, 0, 1, this._position.z,
+            0, 0, 0,           1
+        );
     }
 
     private getTransformationMatrix(): Matrix4 {
