@@ -171,6 +171,17 @@ export class Matrix4 {
         );
     }
 
+    public getRightVector(): Vector4 {
+        return new Vector4(this.m11, this.m12, this.m13, this.m14);
+    }
+    
+    public getUpVector(): Vector4 {
+        return new Vector4(this.m21, this.m22, this.m23, this.m24);
+    }
+    public getForwardVector(): Vector4 {
+        return new Vector4(this.m31, this.m32, this.m33, this.m34);
+    }
+
     public toFloat32Array(): Float32Array {
         return new Float32Array([
             this.m11, this.m12, this.m13, this.m14,

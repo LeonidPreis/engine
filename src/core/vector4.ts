@@ -80,11 +80,11 @@ export class Vector4 {
     }
 
     public distance(v4: Vector4): number {
-        return ((this.x - v4.x)**2 + (this.y - v4.y)**2 + (this.z - v4.z)**2)**0.5;
+        return this.subtract(v4).length();
     }
 
     public static between(from: Vector4, to: Vector4): Vector4 {
-        return new Vector4(to.x - from.x, to.y - from.y, to.z - from.z, to.w  - from.w);
+        return to.subtract(from);
     }
 
     public toFloat32Array(): Float32Array {
