@@ -56,7 +56,6 @@ export class WebGPU implements Subscriber{
     private camera: ArcballCamera;
     private instance: Instance;
     private isRendering: boolean = false;
-    private lastTime: number = 0;
 
     constructor(canvas: HTMLCanvasElement, camera: ArcballCamera, instance: Instance) {
         this.canvas = canvas;
@@ -145,6 +144,20 @@ export class WebGPU implements Subscriber{
         return buffer;
     }
 
+    private createColorsBuffer(colors: Uint8ClampedArray): GPUBuffer {
+        if (!this.device) {
+            throw new Error("Device is not initialized.");
+        }
+        const buffer = this.device.createBuffer({
+            size: colors.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true,
+        });
+        new Uint8ClampedArray(buffer.getMappedRange()).set(colors);
+        buffer.unmap();
+        return buffer;
+    }
+
     private createUniformBuffer(size: number): GPUBuffer {
         if (!this.device) {
             throw new Error("Device is not initialized.");
@@ -168,9 +181,7 @@ export class WebGPU implements Subscriber{
                     entries: [{
                         binding: 0,
                         visibility: GPUShaderStage.VERTEX,
-                        buffer: {
-                            type: "uniform",
-                        },
+                        buffer: { type: "uniform" },
                     }],
                 })],
             }),
@@ -179,30 +190,29 @@ export class WebGPU implements Subscriber{
                     code: shader,
                 }),
                 entryPoint: "Vertex",
-                buffers: [{
-                    arrayStride: 28,
-                    attributes: [
-                        {
+                buffers: [
+                    {   
+                        arrayStride: 12,
+                        attributes: [{
                             shaderLocation: 0,
                             format: "float32x3",
                             offset: 0,
-                        },
-                        {
+                        },]
+                    },
+                    {
+                        arrayStride: 4,
+                        attributes: [{
                             shaderLocation: 1,
-                            format: "float32x4",
-                            offset: 12,
-                        }
-                    ]
-                }]
+                            format: "unorm8x4",
+                            offset: 0,
+                        },]
+                    }
+                ]
             },
             fragment: {
-                module: this.device.createShaderModule({
-                    code: shader,
-                }),
+                module: this.device.createShaderModule({ code: shader, }),
                 entryPoint: "Fragment",
-                targets: [{
-                    format: navigator.gpu.getPreferredCanvasFormat(),
-                }]
+                targets: [{ format: navigator.gpu.getPreferredCanvasFormat(), }]
             },
             primitive: {
                 topology: "triangle-list",
@@ -227,6 +237,7 @@ export class WebGPU implements Subscriber{
         const projectionMatrix = camera.projection.getProjectionMatrix().transpose().toFloat32Array();
                 
         const verticesBuffer = this.createVerticesBuffer(new Float32Array(instance.model.vertices));
+        const colorsBuffer = this.createColorsBuffer(new Uint8ClampedArray(instance.model.colors));
         const indicesBuffer = this.createIndicesBuffer(new Uint32Array(instance.model.indices));
         const uniformBuffer = this.createUniformBuffer(192);     
         
@@ -272,6 +283,7 @@ export class WebGPU implements Subscriber{
         pass.setPipeline(pipeline);
         pass.setBindGroup(0, bindGroup);
         pass.setVertexBuffer(0, verticesBuffer);
+        pass.setVertexBuffer(1, colorsBuffer);
         pass.setIndexBuffer(indicesBuffer, "uint32");
         pass.drawIndexed(instance.model.indices.length);
         pass.end();
