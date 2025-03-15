@@ -3,8 +3,8 @@ import { Model } from './model'
 import { Transformation } from './transformation';
 
 export class Instance {
-    private model: Model;
-    private transformation: Transformation;
+    public model: Model;
+    public transformation: Transformation;
     
     constructor(
         model: Model,

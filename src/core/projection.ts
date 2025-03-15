@@ -9,11 +9,12 @@ export interface IProjection<T extends object> {
     type: ProjectionType;
     descriptor: T;
     matrix: Matrix4;
-    projectionMatrix(): Matrix4;
+    getProjectionMatrix(): Matrix4;
 }
 
+export type ProjectionDescriptor = PerspectiveProjectionDescriptor | OrtographicProjectionDescriptor;
 
-type PerspectiveProjectionDescriptor = {
+export type PerspectiveProjectionDescriptor = {
     near: number,
     far: number,
     FOVY: number,
@@ -33,10 +34,10 @@ export class PerspectiveProjection implements IProjection<PerspectiveProjectionD
             FOVY: descriptor.FOVY ?? 90,
             aspect: descriptor.aspect ?? 1
         };
-        this.matrix = this.projectionMatrix();
+        this.matrix = this.getProjectionMatrix();
     }
 
-    public projectionMatrix(): Matrix4 {
+    public getProjectionMatrix(): Matrix4 {
         const near = this.descriptor.near;
         const far = this.descriptor.far;
         const FOVY = this.descriptor.FOVY;
@@ -76,10 +77,10 @@ export class OrtographicProjection implements IProjection<OrtographicProjectionD
             far: descriptor.far ?? 1,
             scale: descriptor.scale ?? 1,
         };
-        this.matrix = this.projectionMatrix();
+        this.matrix = this.getProjectionMatrix();
     }
 
-    public projectionMatrix(): Matrix4 {
+    public getProjectionMatrix(): Matrix4 {
         const [left, right] = [this.descriptor.left, this.descriptor.right];
         const [top, bottom] = [this.descriptor.top, this.descriptor.bottom];
         const [near, far] = [this.descriptor.near, this.descriptor.far];

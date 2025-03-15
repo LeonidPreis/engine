@@ -11,7 +11,11 @@
     "inlineSources": true,  
     "inlineSourceMap": false,
     "removeComments": false,
-    "lib": ["ES2016", "DOM"]
+    "lib": ["ES2020", "DOM"],
+    "types": [
+      "node",
+      "@webgpu/types"
+    ],
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
