@@ -54,35 +54,17 @@ export class WebGPU implements Subscriber{
     private device: GPUDevice | null = null;
     private context: GPUCanvasContext | null = null;
     private camera: ArcballCamera;
-    private instance: Instance;
-    private isRendering: boolean = false;
+    private instances: Instance[];
 
-    constructor(canvas: HTMLCanvasElement, camera: ArcballCamera, instance: Instance) {
+    constructor(canvas: HTMLCanvasElement, camera: ArcballCamera, instances: Instance[]) {
         this.canvas = canvas;
         this.camera = camera;
-        this.instance = instance;
+        this.instances = instances;
         this.camera.subscribe(this);
     } 
 
     public update(): void {
-        this.render(this.instance, this.camera, shader);
-    }
-
-    public startRendering(): void {
-        if (this.isRendering) return;
-
-        this.isRendering = true;
-        const renderLoop = () => {
-            this.render(this.instance, this.camera, shader);
-            if (this.isRendering) {
-                requestAnimationFrame(renderLoop);
-            }
-        };
-        renderLoop();
-    }
-
-    public stopRendering(): void {
-        this.isRendering = false;
+        this.render(this.instances, this.camera, shader);
     }
 
     public async init(): Promise<void> {
@@ -144,16 +126,28 @@ export class WebGPU implements Subscriber{
         return buffer;
     }
 
-    private createColorsBuffer(colors: Uint8ClampedArray): GPUBuffer {
+    private createColorsBuffer(colors: Uint8ClampedArray, verticesAmount: number): GPUBuffer {
         if (!this.device) {
             throw new Error("Device is not initialized.");
         }
+        let colorsArray;
+        if (colors.length === 4) {
+            const singleColor = colors;
+            colorsArray = new Uint8ClampedArray(verticesAmount / 3 * 4);
+            for (let i = 0; i < colorsArray.length; i += 4) {
+                colorsArray.set(singleColor, i);
+            }
+        } else {
+            colorsArray = colors;
+        }
+
         const buffer = this.device.createBuffer({
-            size: colors.byteLength,
+            size: colorsArray.byteLength,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
             mappedAtCreation: true,
         });
-        new Uint8ClampedArray(buffer.getMappedRange()).set(colors);
+
+        new Uint8ClampedArray(buffer.getMappedRange()).set(colorsArray);
         buffer.unmap();
         return buffer;
     }
@@ -224,51 +218,14 @@ export class WebGPU implements Subscriber{
     }
 
     public render(
-        instance: Instance,
+        instances: Instance[],
         camera: ArcballCamera,
         shader: string
-        ): void {
+    ): void {
         if (!this.device || !this.context) {
             throw new Error("Device or context is not initialized.");
         }
 
-        const modelMatrix = instance.getTransformationMatrix().transpose().toFloat32Array()
-        const viewMatrix = camera.getViewMatrix().transpose().toFloat32Array();
-        const projectionMatrix = camera.projection.getProjectionMatrix().transpose().toFloat32Array();
-                
-        const verticesBuffer = this.createVerticesBuffer(new Float32Array(instance.model.vertices));
-        const colorsBuffer = this.createColorsBuffer(new Uint8ClampedArray(instance.model.colors));
-        const indicesBuffer = this.createIndicesBuffer(new Uint32Array(instance.model.indices));
-        const uniformBuffer = this.createUniformBuffer(192);     
-        
-        const matrices = new Float32Array(16 * 3);
-        matrices.set(modelMatrix, 0);
-        matrices.set(viewMatrix, 16);
-        matrices.set(projectionMatrix, 32);
-
-        this.device.queue.writeBuffer(uniformBuffer, 0, matrices);
-
-        const bindGroupLayout = this.device.createBindGroupLayout({
-            entries: [{
-                binding: 0,
-                visibility: GPUShaderStage.VERTEX,
-                buffer: {
-                    type: "uniform",
-                },
-            }],
-        });
-        
-        const bindGroup = this.device.createBindGroup({
-            layout: bindGroupLayout,
-            entries: [{
-                binding: 0,
-                resource: {
-                    buffer: uniformBuffer,
-                },
-            }],
-        });
-
-        const pipeline = this.createPipeline(shader)
         const encoder = this.device.createCommandEncoder();
         const texture = this.context.getCurrentTexture();
         const pass = encoder.beginRenderPass({
@@ -279,13 +236,56 @@ export class WebGPU implements Subscriber{
                 storeOp: "store",
             }]
         });
-
+    
+        const pipeline = this.createPipeline(shader);
         pass.setPipeline(pipeline);
-        pass.setBindGroup(0, bindGroup);
-        pass.setVertexBuffer(0, verticesBuffer);
-        pass.setVertexBuffer(1, colorsBuffer);
-        pass.setIndexBuffer(indicesBuffer, "uint32");
-        pass.drawIndexed(instance.model.indices.length);
+    
+        for (const instance of instances) {
+            const model = instance.model;
+    
+            const modelMatrix = instance.getTransformationMatrix().transpose().toFloat32Array();
+            const viewMatrix = camera.getViewMatrix().transpose().toFloat32Array();
+            const projectionMatrix = camera.projection.getProjectionMatrix().transpose().toFloat32Array();
+    
+            const verticesBuffer = this.createVerticesBuffer(new Float32Array(model.vertices));
+            const colorsBuffer = this.createColorsBuffer(new Uint8ClampedArray(model.colors), model.vertices.length);
+            const indicesBuffer = this.createIndicesBuffer(new Uint32Array(model.indices));
+            const uniformBuffer = this.createUniformBuffer(192);
+    
+            const matrices = new Float32Array(16 * 3);
+            matrices.set(modelMatrix, 0);
+            matrices.set(viewMatrix, 16);
+            matrices.set(projectionMatrix, 32);
+    
+            this.device.queue.writeBuffer(uniformBuffer, 0, matrices);
+    
+            const bindGroupLayout = this.device.createBindGroupLayout({
+                entries: [{
+                    binding: 0,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: {
+                        type: "uniform",
+                    },
+                }],
+            });
+    
+            const bindGroup = this.device.createBindGroup({
+                layout: bindGroupLayout,
+                entries: [{
+                    binding: 0,
+                    resource: {
+                        buffer: uniformBuffer,
+                    },
+                }],
+            });
+    
+            pass.setBindGroup(0, bindGroup);
+            pass.setVertexBuffer(0, verticesBuffer);
+            pass.setVertexBuffer(1, colorsBuffer);
+            pass.setIndexBuffer(indicesBuffer, "uint32");
+            pass.drawIndexed(instance.model.indices.length);
+        }
+
         pass.end();
         this.device.queue.submit([encoder.finish()]);
     }
