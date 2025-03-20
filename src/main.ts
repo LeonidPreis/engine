@@ -13,33 +13,10 @@ import { Color } from "./core/color";
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const camera = new ArcballCamera(
     canvas,
-    new Vector4(-1,-4,6),
-    new Vector4(4,4,8),
+    new Vector4(-1,-4,6), new Vector4(4,4,8),
     new PerspectiveProjection({aspect: canvas.clientWidth / canvas.clientHeight}))
 
 const instances = [
-    new Instance(
-        new Model(
-            new Float32Array([
-                -1,-1,-1,   1,-1,-1,   1, 1,-1,   -1, 1,-1,
-                -1,-1, 1,   1,-1, 1,   1, 1, 1,   -1, 1, 1,
-            ]),
-            new Uint32Array([
-                0,3,1,   3,2,1,   5,1,2,   2,6,5,
-                1,5,4,   0,1,4,   7,2,3,   7,6,2,
-                5,6,7,   4,5,7,   4,7,3,   0,4,3
-            ]),
-            new Uint8ClampedArray([
-                0,  0,  0,255,   0,255,  0,255,   255,255,  0,255,   255,0,  0,255,
-                0,  0,255,255,   0,255,255,255,   255,255,255,255,   255,0,255,255,
-            ]),
-        ),
-        new Transformation(
-            new Vector3(-1,-0.5,0),
-            new Euler(90,90,0,RotationOrder.XYZ, true),
-            new Vector3(1,1,1)
-        )
-    ),
     new Instance(
         new Model(
             new Float32Array([
@@ -62,69 +39,11 @@ const instances = [
             new Vector3(1,1,1)
         )
     ),
-    new Instance(
-        new Model(
-            new Float32Array([
-                -1,-1,-1,   1,-1,-1,   1, 1,-1,   -1, 1,-1,
-                -1,-1, 1,   1,-1, 1,   1, 1, 1,   -1, 1, 1,
-            ]),
-            new Uint32Array([
-                0,3,1,   3,2,1,   5,1,2,   2,6,5,
-                1,5,4,   0,1,4,   7,2,3,   7,6,2,
-                5,6,7,   4,5,7,   4,7,3,   0,4,3
-            ]),
-            new Uint8ClampedArray([
-                0,  0,  0,255,   0,255,  0,255,   255,255,  0,255,   255,0,  0,255,
-                0,  0,255,255,   0,255,255,255,   255,255,255,255,   255,0,255,255,
-            ]),
-        ),
-        new Transformation(
-            new Vector3(1,0.5,0),
-            new Euler(0,90,90,RotationOrder.XYZ, true),
-            new Vector3(1,1,1)
-        )
-    ),
 ]
 
 const webGPU = new WebGPU(canvas, camera, instances);
-const shader = `
-struct Uniforms {
-    modelMatrix: mat4x4<f32>,
-    viewMatrix: mat4x4<f32>,
-    projectionMatrix: mat4x4<f32>,
-};
-
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-
-struct Output {
-    @builtin(position) Position: vec4<f32>,
-    @location(0) Color: vec4<f32>,
-};
-
-@vertex
-fn Vertex(
-    @location(0) position: vec3<f32>,
-    @location(1) color: vec4<f32>)
-    -> Output {
-        var output: Output;
-        let worldPosition = uniforms.modelMatrix * vec4<f32>(position, 1.0);
-        let viewPosition = uniforms.viewMatrix * worldPosition;
-        let clipPosition = uniforms.projectionMatrix * viewPosition;
-        output.Position = clipPosition;
-        output.Color = color;
-        return output;
-    };
-
-@fragment
-fn Fragment(
-    @location(0) Color: vec4<f32>)
-    -> @location(0) vec4<f32> {
-        return Color;
-    };
-`;
 async function main() {
     await webGPU.init();
-    webGPU.render(instances, camera, shader);
+    webGPU.render(instances, camera);
 }
-
 main();

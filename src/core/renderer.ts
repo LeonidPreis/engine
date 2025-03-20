@@ -1,49 +1,7 @@
 import { ArcballCamera } from "./camera";
 import { Instance } from "./instance";
-import { Model } from "./model";
-import { Vector3 } from "./vector3";
-import { Matrix4 } from "./matrix4";
-import { Vector4 } from "./vector4";
-import { Euler, RotationOrder } from "./euler";
-import { Quaternion } from "./quaternion";
-import { PerspectiveProjection } from "./projection";
-import { Transformation } from "./transformation";
-
-const shader = `
-struct Uniforms {
-    modelMatrix: mat4x4<f32>,
-    viewMatrix: mat4x4<f32>, 
-    projectionMatrix: mat4x4<f32>,
-};
-
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-
-struct Output {
-    @builtin(position) Position: vec4<f32>,
-    @location(0) Color: vec4<f32>,
-};
-
-@vertex
-fn Vertex(
-    @location(0) position: vec3<f32>,
-    @location(1) color: vec4<f32>)
-    -> Output {
-        var output: Output;
-        let worldPosition = uniforms.modelMatrix * vec4<f32>(position, 1.0);
-        let viewPosition = uniforms.viewMatrix * worldPosition;
-        let clipPosition = uniforms.projectionMatrix * viewPosition;
-        output.Position = clipPosition;
-        output.Color = color;
-        return output;
-    };
-
-@fragment
-fn Fragment(
-    @location(0) Color: vec4<f32>)
-    -> @location(0) vec4<f32> {
-        return Color;
-    };
-`;
+import { WebGPUBufferManager } from "./buffer-manager";
+import { defaultShader } from "./default-shaders"
 
 interface Subscriber {
     update(): void;
@@ -51,10 +9,12 @@ interface Subscriber {
 
 export class WebGPU implements Subscriber{
     private canvas: HTMLCanvasElement;
-    private device: GPUDevice | null = null;
-    private context: GPUCanvasContext | null = null;
     private camera: ArcballCamera;
     private instances: Instance[];
+    private shader: string = defaultShader;
+    private device: GPUDevice | null = null;
+    private context: GPUCanvasContext | null = null;
+    private bufferManager: WebGPUBufferManager | null = null;
 
     constructor(canvas: HTMLCanvasElement, camera: ArcballCamera, instances: Instance[]) {
         this.canvas = canvas;
@@ -64,7 +24,7 @@ export class WebGPU implements Subscriber{
     } 
 
     public update(): void {
-        this.render(this.instances, this.camera, shader);
+        this.render(this.instances, this.camera);
     }
 
     public async init(): Promise<void> {
@@ -78,10 +38,10 @@ export class WebGPU implements Subscriber{
         }
 
         this.device = await adapter.requestDevice();
+        this.bufferManager = new WebGPUBufferManager(this.device);
         if (!this.device) {
             throw new Error("WebGPU device is not available.");
         }
-
         const ratio = window.devicePixelRatio || 1;
         this.canvas.width = window.innerWidth * ratio;
         this.canvas.height = window.innerHeight * ratio;
@@ -98,73 +58,7 @@ export class WebGPU implements Subscriber{
         });
     }
 
-    private createVerticesBuffer(vertices: Float32Array): GPUBuffer {
-        if (!this.device) {
-            throw new Error("Device is not initialized.");
-        }
-        const buffer = this.device.createBuffer({
-            size: vertices.byteLength,
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-            mappedAtCreation: true,
-        });
-        new Float32Array(buffer.getMappedRange()).set(vertices);
-        buffer.unmap();
-        return buffer;
-    }
-
-    private createIndicesBuffer(indices: Uint32Array): GPUBuffer {
-        if (!this.device) {
-            throw new Error("Device is not initialized.");
-        }
-        const buffer =  this.device.createBuffer({
-            size: indices.byteLength,
-            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-            mappedAtCreation: true,
-        });
-        new Uint32Array(buffer.getMappedRange()).set(indices);
-        buffer.unmap();
-        return buffer;
-    }
-
-    private createColorsBuffer(colors: Uint8ClampedArray, verticesAmount: number): GPUBuffer {
-        if (!this.device) {
-            throw new Error("Device is not initialized.");
-        }
-        let colorsArray;
-        if (colors.length === 4) {
-            const singleColor = colors;
-            colorsArray = new Uint8ClampedArray(verticesAmount / 3 * 4);
-            for (let i = 0; i < colorsArray.length; i += 4) {
-                colorsArray.set(singleColor, i);
-            }
-        } else {
-            colorsArray = colors;
-        }
-
-        const buffer = this.device.createBuffer({
-            size: colorsArray.byteLength,
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-            mappedAtCreation: true,
-        });
-
-        new Uint8ClampedArray(buffer.getMappedRange()).set(colorsArray);
-        buffer.unmap();
-        return buffer;
-    }
-
-    private createUniformBuffer(size: number): GPUBuffer {
-        if (!this.device) {
-            throw new Error("Device is not initialized.");
-        }
-        const buffer = this.device.createBuffer({
-            size: size,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-        return buffer;
-    }
-
-    public createPipeline(
-        shader: string): GPURenderPipeline {
+    public createPipeline(): GPURenderPipeline {
         if (!this.device) {
             throw new Error("Device is not initialized.");
         }
@@ -181,7 +75,7 @@ export class WebGPU implements Subscriber{
             }),
             vertex: {
                 module: this.device.createShaderModule({
-                    code: shader,
+                    code: this.shader,
                 }),
                 entryPoint: "Vertex",
                 buffers: [
@@ -204,7 +98,7 @@ export class WebGPU implements Subscriber{
                 ]
             },
             fragment: {
-                module: this.device.createShaderModule({ code: shader, }),
+                module: this.device.createShaderModule({ code: this.shader, }),
                 entryPoint: "Fragment",
                 targets: [{ format: navigator.gpu.getPreferredCanvasFormat(), }]
             },
@@ -219,11 +113,10 @@ export class WebGPU implements Subscriber{
 
     public render(
         instances: Instance[],
-        camera: ArcballCamera,
-        shader: string
+        camera: ArcballCamera
     ): void {
-        if (!this.device || !this.context) {
-            throw new Error("Device or context is not initialized.");
+        if (!this.device || !this.context || !this.bufferManager) {
+            throw new Error("Device, context, or bufferManager is not initialized.");
         }
 
         const encoder = this.device.createCommandEncoder();
@@ -231,13 +124,13 @@ export class WebGPU implements Subscriber{
         const pass = encoder.beginRenderPass({
             colorAttachments: [{
                 view: texture.createView(),
-                clearValue: { r: 0.4, g: 0.4, b: 0.4, a: 1 },
+                clearValue: { r: 0.05, g: 0.05, b: 0.05, a: 1 },
                 loadOp: "clear",
                 storeOp: "store",
             }]
         });
     
-        const pipeline = this.createPipeline(shader);
+        const pipeline = this.createPipeline();
         pass.setPipeline(pipeline);
     
         for (const instance of instances) {
@@ -247,12 +140,12 @@ export class WebGPU implements Subscriber{
             const viewMatrix = camera.getViewMatrix().transpose().toFloat32Array();
             const projectionMatrix = camera.projection.getProjectionMatrix().transpose().toFloat32Array();
     
-            const verticesBuffer = this.createVerticesBuffer(new Float32Array(model.vertices));
-            const colorsBuffer = this.createColorsBuffer(new Uint8ClampedArray(model.colors), model.vertices.length);
-            const indicesBuffer = this.createIndicesBuffer(new Uint32Array(model.indices));
-            const uniformBuffer = this.createUniformBuffer(192);
+            const colorsBuffer = this.bufferManager.createColorsBuffer(new Uint8ClampedArray(model.colors), model.vertices.length);
+            const indicesBuffer = this.bufferManager.createIndicesBuffer(new Uint32Array(model.indices));
+            const verticesBuffer = this.bufferManager.createVerticesBuffer(new Float32Array(model.vertices));
+            const uniformBuffer = this.bufferManager.createUniformBuffer(192);
     
-            const matrices = new Float32Array(16 * 3);
+            const matrices = new Float32Array(48);
             matrices.set(modelMatrix, 0);
             matrices.set(viewMatrix, 16);
             matrices.set(projectionMatrix, 32);
@@ -263,9 +156,7 @@ export class WebGPU implements Subscriber{
                 entries: [{
                     binding: 0,
                     visibility: GPUShaderStage.VERTEX,
-                    buffer: {
-                        type: "uniform",
-                    },
+                    buffer: { type: "uniform" },
                 }],
             });
     
@@ -273,9 +164,7 @@ export class WebGPU implements Subscriber{
                 layout: bindGroupLayout,
                 entries: [{
                     binding: 0,
-                    resource: {
-                        buffer: uniformBuffer,
-                    },
+                    resource: { buffer: uniformBuffer, },
                 }],
             });
     
