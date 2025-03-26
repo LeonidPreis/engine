@@ -2,6 +2,7 @@ import { ArcballCamera } from "./camera";
 import { Instance } from "./instance";
 import { WebGPUBufferManager } from "./buffer-manager";
 import { defaultShader } from "./default-shaders"
+import { DrawMode } from "./model";
 
 interface Subscriber {
     update(): void;
@@ -58,7 +59,7 @@ export class WebGPU implements Subscriber{
         });
     }
 
-    public createPipeline(): GPURenderPipeline {
+    public createPipeline(drawMode: DrawMode): GPURenderPipeline {
         if (!this.device) {
             throw new Error("Device is not initialized.");
         }
@@ -103,9 +104,14 @@ export class WebGPU implements Subscriber{
                 targets: [{ format: navigator.gpu.getPreferredCanvasFormat(), }]
             },
             primitive: {
-                topology: "triangle-list",
-                cullMode: "front"
-            }
+                topology: drawMode === DrawMode.polygon ? "triangle-list" : "line-list",
+                cullMode: drawMode === DrawMode.polygon ? "back" : "none"
+            },
+            depthStencil: {
+                format: "depth24plus",
+                depthWriteEnabled: true,
+                depthCompare: "less-equal",
+            },
         });
 
         return pipeline;
@@ -127,54 +133,73 @@ export class WebGPU implements Subscriber{
                 clearValue: { r: 0.05, g: 0.05, b: 0.05, a: 1 },
                 loadOp: "clear",
                 storeOp: "store",
-            }]
+            }],
+            depthStencilAttachment: {
+                view: this.device.createTexture({
+                    size: [this.canvas.width, this.canvas.height],
+                    format: 'depth24plus',
+                    usage: GPUTextureUsage.RENDER_ATTACHMENT,
+                }).createView(),
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store',
+            }
         });
-    
-        const pipeline = this.createPipeline();
-        pass.setPipeline(pipeline);
-    
-        for (const instance of instances) {
-            const model = instance.model;
-    
-            const modelMatrix = instance.getTransformationMatrix().transpose().toFloat32Array();
-            const viewMatrix = camera.getViewMatrix().transpose().toFloat32Array();
-            const projectionMatrix = camera.projection.getProjectionMatrix().transpose().toFloat32Array();
-    
-            const colorsBuffer = this.bufferManager.createColorsBuffer(new Uint8ClampedArray(model.colors), model.vertices.length);
-            const indicesBuffer = this.bufferManager.createIndicesBuffer(new Uint32Array(model.indices));
-            const verticesBuffer = this.bufferManager.createVerticesBuffer(new Float32Array(model.vertices));
-            const uniformBuffer = this.bufferManager.createUniformBuffer(192);
-    
-            const matrices = new Float32Array(48);
-            matrices.set(modelMatrix, 0);
-            matrices.set(viewMatrix, 16);
-            matrices.set(projectionMatrix, 32);
-    
-            this.device.queue.writeBuffer(uniformBuffer, 0, matrices);
-    
-            const bindGroupLayout = this.device.createBindGroupLayout({
-                entries: [{
-                    binding: 0,
-                    visibility: GPUShaderStage.VERTEX,
-                    buffer: { type: "uniform" },
-                }],
-            });
-    
-            const bindGroup = this.device.createBindGroup({
-                layout: bindGroupLayout,
-                entries: [{
-                    binding: 0,
-                    resource: { buffer: uniformBuffer, },
-                }],
-            });
-    
-            pass.setBindGroup(0, bindGroup);
-            pass.setVertexBuffer(0, verticesBuffer);
-            pass.setVertexBuffer(1, colorsBuffer);
-            pass.setIndexBuffer(indicesBuffer, "uint32");
-            pass.drawIndexed(instance.model.indices.length);
-        }
 
+        const instancesByMode = new Map<DrawMode, Instance[]>();
+        instances.forEach(instance => {
+            const mode = instance.model.drawMode;
+            if (!instancesByMode.has(mode)) instancesByMode.set(mode, []);
+            instancesByMode.get(mode)!.push(instance);
+        });
+
+        for (const [drawMode, instances] of instancesByMode) {
+            const pipeline = this.createPipeline(drawMode);
+            pass.setPipeline(pipeline);
+    
+            for (const instance of instances) {
+                const model = instance.model;
+    
+                const modelMatrix = instance.getTransformationMatrix().transpose().toFloat32Array();
+                const viewMatrix = camera.getViewMatrix().transpose().toFloat32Array();
+                const projectionMatrix = camera.projection.getProjectionMatrix().transpose().toFloat32Array();
+        
+                const colorsBuffer = this.bufferManager.createColorsBuffer(new Uint8ClampedArray(model.colors), model.vertices.length);
+                const indicesBuffer = this.bufferManager.createIndicesBuffer(new Uint32Array(model.indices));
+                const verticesBuffer = this.bufferManager.createVerticesBuffer(new Float32Array(model.vertices));
+                const uniformBuffer = this.bufferManager.createUniformBuffer(192);
+        
+                const matrices = new Float32Array(48);
+                matrices.set(modelMatrix, 0);
+                matrices.set(viewMatrix, 16);
+                matrices.set(projectionMatrix, 32);
+        
+                this.device.queue.writeBuffer(uniformBuffer, 0, matrices);
+        
+                const bindGroupLayout = this.device.createBindGroupLayout({
+                    entries: [{
+                        binding: 0,
+                        visibility: GPUShaderStage.VERTEX,
+                        buffer: { type: "uniform" },
+                    }],
+                });
+        
+                const bindGroup = this.device.createBindGroup({
+                    layout: bindGroupLayout,
+                    entries: [{
+                        binding: 0,
+                        resource: { buffer: uniformBuffer, },
+                    }],
+                });
+                
+                pass.setBindGroup(0, bindGroup);
+                pass.setVertexBuffer(0, verticesBuffer);
+                pass.setVertexBuffer(1, colorsBuffer);
+                pass.setIndexBuffer(indicesBuffer, "uint32");
+                pass.drawIndexed(model.indices.length);
+            }
+        }
+    
         pass.end();
         this.device.queue.submit([encoder.finish()]);
     }

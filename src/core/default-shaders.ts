@@ -18,7 +18,7 @@ fn Vertex(
     @location(1) color: vec4<f32>)
     -> Output {
         var output: Output;
-        let worldPosition = uniforms.modelMatrix * vec4<f32>(position, 1.0);
+        let worldPosition = uniforms.modelMatrix * vec4<f32>(position.x, position.y, -position.z, 1.0);
         let viewPosition = uniforms.viewMatrix * worldPosition;
         let clipPosition = uniforms.projectionMatrix * viewPosition;
         output.Position = clipPosition;

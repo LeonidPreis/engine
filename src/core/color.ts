@@ -396,4 +396,16 @@ export class Color implements IColor {
                 );
         }
     }
+
+    public static random(): Color {
+        return new Color(
+            'RGBA',
+            [
+                Math.floor(Math.random() * 256),
+                Math.floor(Math.random() * 256),
+                Math.floor(Math.random() * 256),
+                255
+            ]
+        );
+    }
 }
