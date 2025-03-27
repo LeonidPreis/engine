@@ -1,8 +1,19 @@
+import { Instance } from "./instance";
 
 
 export class WebGPUBufferManager {
-    private device: GPUDevice
-    constructor(device: GPUDevice) { this.device = device; }
+    private device: GPUDevice;
+    private bindGroupLayout: GPUBindGroupLayout;
+    constructor(device: GPUDevice) { 
+        this.device = device;
+        this.bindGroupLayout = this.device.createBindGroupLayout({
+            entries: [{
+                binding: 0,
+                visibility: GPUShaderStage.VERTEX,
+                buffer: { type: "uniform" },
+            }],
+        });
+    }
 
     public createVerticesBuffer(vertices: Float32Array): GPUBuffer {
         if (!this.device) {
@@ -65,5 +76,28 @@ export class WebGPUBufferManager {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         return buffer;
+    }
+
+    public createInstanceBuffers(instance: Instance): {
+        verticesBuffer: GPUBuffer;
+        indicesBuffer: GPUBuffer;
+        colorsBuffer: GPUBuffer;
+        uniformBuffer: GPUBuffer;
+        bindGroup: GPUBindGroup;
+    } {
+        const verticesBuffer = this.createVerticesBuffer(instance.model.vertices);
+        const indicesBuffer = this.createIndicesBuffer(instance.model.indices);
+        const colorsBuffer = this.createColorsBuffer(instance.model.colors, instance.model.vertices.length);
+        const uniformBuffer = this.createUniformBuffer(192);
+        const bindGroup = this.device.createBindGroup({
+            layout: this.bindGroupLayout,
+            entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+        });
+
+        return { verticesBuffer, indicesBuffer, colorsBuffer, uniformBuffer, bindGroup };
+    }
+
+    public updateUniformBuffer(uniformBuffer: GPUBuffer, matrices: Float32Array) {
+        this.device.queue.writeBuffer(uniformBuffer, 0, matrices);
     }
 }

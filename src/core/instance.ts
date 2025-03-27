@@ -1,3 +1,4 @@
+import { WebGPUBufferManager } from './buffer-manager';
 import { Matrix4 } from './matrix4';
 import { Model } from './model'
 import { Transformation } from './transformation';
