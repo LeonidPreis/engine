@@ -277,5 +277,32 @@ export class Mesh {
             }
         }
         return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toArray());
-    } 
+    }
+
+    public static cone(
+        diameter: number = 1,
+        height: number = 2,
+        sectors: number = 16,
+        color: Color = Mesh.defaultColor
+    ): Model {
+        const radius = diameter / 2;
+        const sectorStep = 2 * Math.PI / sectors;
+        const vertices: number[] = [0, 0, 0, 0, 0, height];
+        const indices: number[] = [];
+
+        for (let i = 0; i <= sectors; i++) {
+            const theta = i * sectorStep;
+            const x = radius * Math.cos(theta);
+            const z = radius * Math.sin(theta);
+            vertices.push(x, 0, z);
+        }
+
+        for (let i = 0; i < sectors; i++) {
+            const current = 2 + i;
+            const next = 2 + (i + 1) % sectors;
+            indices.push(0, current, next, 1, next, current);
+        }
+
+        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toArray());
+    }
 }

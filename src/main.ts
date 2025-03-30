@@ -69,6 +69,14 @@ const instances = [
             new Vector3(2,2,2)
         )
     ),
+    new Instance(
+        Mesh.cone(2, 2.5),
+        new Transformation(
+            new Vector3(0,0,0),
+            new Euler(0,0,0,RotationOrder.XYZ,true),
+            new Vector3(2,2,2)
+        )
+    ),
 ]
 
 const webGPU = new WebGPU(canvas, camera, instances);
@@ -77,3 +85,5 @@ async function main() {
     webGPU.render(instances, camera);
 }
 main();
+
+
