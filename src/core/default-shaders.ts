@@ -1,11 +1,12 @@
 export const defaultShader = `
-struct Uniforms {
+struct Matrices {
     modelMatrix: mat4x4<f32>,
     viewMatrix: mat4x4<f32>, 
     projectionMatrix: mat4x4<f32>,
+    nolmalMatrix: mat4x4<f32>,
 };
 
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(0) var<uniform> matrices: Matrices;
 
 struct Output {
     @builtin(position) Position: vec4<f32>,
@@ -18,9 +19,9 @@ fn Vertex(
     @location(1) color: vec4<f32>)
     -> Output {
         var output: Output;
-        let worldPosition = uniforms.modelMatrix * vec4<f32>(position.x, position.y, -position.z, 1.0);
-        let viewPosition = uniforms.viewMatrix * worldPosition;
-        let clipPosition = uniforms.projectionMatrix * viewPosition;
+        let worldPosition = matrices.modelMatrix * vec4<f32>(position.x, position.y, -position.z, 1.0);
+        let viewPosition = matrices.viewMatrix * worldPosition;
+        let clipPosition = matrices.projectionMatrix * viewPosition;
         output.Position = clipPosition;
         output.Color = color;
         return output;

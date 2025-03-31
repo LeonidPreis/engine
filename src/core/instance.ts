@@ -1,4 +1,3 @@
-import { WebGPUBufferManager } from './buffer-manager';
 import { Matrix4 } from './matrix4';
 import { Model } from './model'
 import { Transformation } from './transformation';
@@ -17,5 +16,9 @@ export class Instance {
 
     public getTransformationMatrix(): Matrix4 {
         return this.transformation.getTransformation();
+    }
+
+    public getNormalMatrix(): Matrix4 {
+        return this.getTransformationMatrix().inverse()?.transpose() as Matrix4;
     }
 }

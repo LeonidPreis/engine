@@ -99,7 +99,7 @@ export class Mesh {
                 }
             }
         }
-        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toArray());
+        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toUint8ClampedArray());
     }
 
     public static plane(
@@ -139,7 +139,7 @@ export class Mesh {
                 indices.push(a, d, c);
             }
         }
-        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toArray());
+        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toUint8ClampedArray());
     }
 
     public static disc(
@@ -198,7 +198,7 @@ export class Mesh {
                 indices.push(a, b, c);
             }
         }
-        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toArray());
+        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toUint8ClampedArray());
     }
 
     public static sphere(
@@ -238,7 +238,7 @@ export class Mesh {
                 }
             }
         }
-        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toArray());
+        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toUint8ClampedArray());
     }
 
     public static torus(
@@ -276,7 +276,7 @@ export class Mesh {
                 indices.push(a + 1, b, b + 1);
             }
         }
-        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toArray());
+        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toUint8ClampedArray());
     }
 
     public static cone(
@@ -303,6 +303,6 @@ export class Mesh {
             indices.push(0, current, next, 1, next, current);
         }
 
-        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toArray());
+        return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toUint8ClampedArray());
     }
 }

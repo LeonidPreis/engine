@@ -70,11 +70,11 @@ const instances = [
         )
     ),
     new Instance(
-        Mesh.cone(2, 2.5),
+        Mesh.sphere(1,16,16,new Color('RGBA', [20,20,20,255])),
         new Transformation(
             new Vector3(0,0,0),
             new Euler(0,0,0,RotationOrder.XYZ,true),
-            new Vector3(2,2,2)
+            new Vector3(1,1,1)
         )
     ),
 ]

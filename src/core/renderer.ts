@@ -16,7 +16,15 @@ export class WebGPU implements Subscriber{
     private device: GPUDevice | null = null;
     private context: GPUCanvasContext | null = null;
     private bufferManager: WebGPUBufferManager | null = null;
-    private instanceBuffers: Map<Instance, { verticesBuffer: GPUBuffer; indicesBuffer: GPUBuffer; colorsBuffer: GPUBuffer; uniformBuffer: GPUBuffer; bindGroup: GPUBindGroup }> = new Map();
+    private instanceBuffers: 
+        Map<Instance, { 
+            verticesBuffer: GPUBuffer;
+            indicesBuffer:  GPUBuffer;
+            colorsBuffer:   GPUBuffer;
+            normalsBuffer:  GPUBuffer;
+            uniformBuffer:  GPUBuffer;
+            bindGroup:   GPUBindGroup; 
+        }> = new Map();
 
     constructor(canvas: HTMLCanvasElement, camera: ArcballCamera, instances: Instance[]) {
         this.canvas = canvas;
@@ -66,11 +74,8 @@ export class WebGPU implements Subscriber{
     }
 
     public createPipeline(drawMode: DrawMode): GPURenderPipeline {
-        if (!this.device) {
-            throw new Error("Device is not initialized.");
-        }
-
-        const pipeline = this.device.createRenderPipeline({
+        if (!this.device) throw new Error("Device is not initialized.");
+        return this.device.createRenderPipeline({
             layout: this.device.createPipelineLayout({
                 bindGroupLayouts: [this.device.createBindGroupLayout({
                     entries: [{
@@ -81,9 +86,7 @@ export class WebGPU implements Subscriber{
                 })],
             }),
             vertex: {
-                module: this.device.createShaderModule({
-                    code: this.shader,
-                }),
+                module: this.device.createShaderModule({ code: this.shader, }),
                 entryPoint: "Vertex",
                 buffers: [
                     {   
@@ -119,23 +122,13 @@ export class WebGPU implements Subscriber{
                 depthCompare: "less-equal",
             },
         });
-
-        return pipeline;
     }
 
-    public render(
-        instances: Instance[],
-        camera: ArcballCamera
-    ): void {
-        if (!this.device || !this.context || !this.bufferManager) {
-            throw new Error("Device, context, or bufferManager is not initialized.");
-        }
-
-        const encoder = this.device.createCommandEncoder();
-        const texture = this.context.getCurrentTexture();
-        const pass = encoder.beginRenderPass({
+    public createPassEncoder(encoder: GPUCommandEncoder): GPURenderPassEncoder {
+        if (!this.device || !this.context) throw new Error("Device or context is not initialized.");
+        return encoder.beginRenderPass({
             colorAttachments: [{
-                view: texture.createView(),
+                view: this.context.getCurrentTexture().createView(),
                 clearValue: { r: 0.05, g: 0.05, b: 0.05, a: 1 },
                 loadOp: "clear",
                 storeOp: "store",
@@ -151,6 +144,18 @@ export class WebGPU implements Subscriber{
                 depthStoreOp: 'store',
             }
         });
+    }
+
+    public render(
+        instances: Instance[],
+        camera: ArcballCamera
+    ): void {
+        if (!this.device || !this.context || !this.bufferManager) {
+            throw new Error("Device, context, or bufferManager is not initialized.");
+        }
+
+        const encoder = this.device.createCommandEncoder();
+        const pass = this.createPassEncoder(encoder);
 
         const instancesByMode = new Map<DrawMode, Instance[]>();
         instances.forEach(instance => {
@@ -165,23 +170,13 @@ export class WebGPU implements Subscriber{
             for (const instance of instances) {
                 const buffers = this.instanceBuffers.get(instance);
                 if (!buffers) continue;
-                const model = instance.model;
-    
-                const modelMatrix = instance.getTransformationMatrix().transpose().toFloat32Array();
-                const viewMatrix = camera.getViewMatrix().transpose().toFloat32Array();
-                const projectionMatrix = camera.projection.getProjectionMatrix().transpose().toFloat32Array();
-        
-                const matrices = new Float32Array(48);
-                matrices.set(modelMatrix, 0);
-                matrices.set(viewMatrix, 16);
-                matrices.set(projectionMatrix, 32);
-                this.bufferManager!.updateUniformBuffer(buffers.uniformBuffer, matrices);
+                this.bufferManager!.updateUniformBuffer(buffers.uniformBuffer, instance, camera);
                 
                 pass.setBindGroup(0, buffers.bindGroup);
                 pass.setVertexBuffer(0, buffers.verticesBuffer);
                 pass.setVertexBuffer(1, buffers.colorsBuffer);
                 pass.setIndexBuffer(buffers.indicesBuffer, "uint32");
-                pass.drawIndexed(model.indices.length);
+                pass.drawIndexed(instance.model.indices.length);
             }
         }
     

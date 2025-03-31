@@ -17,7 +17,7 @@ export class ModelLoader {
         const colors = new Uint8ClampedArray(verticesAmount);
     
         if (color) {
-            const currentColor = color.toArray();
+            const currentColor = color.toUint8ClampedArray();
             for (let i = 0; i < verticesAmount; i += 4) {
                 colors[i    ] = currentColor[0];    
                 colors[i + 1] = currentColor[1];
@@ -26,7 +26,7 @@ export class ModelLoader {
             }
         } else {
             for (let i = 0; i < verticesAmount; i += 4) {
-                const randomColor = Color.random().toArray();
+                const randomColor = Color.random().toUint8ClampedArray();
                 colors[i    ] = randomColor[0];    
                 colors[i + 1] = randomColor[1];
                 colors[i + 2] = randomColor[2];
