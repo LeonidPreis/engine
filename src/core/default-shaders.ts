@@ -1,9 +1,9 @@
 export const defaultShader = `
 struct Matrices {
-    modelMatrix: mat4x4<f32>,
-    viewMatrix: mat4x4<f32>, 
-    projectionMatrix: mat4x4<f32>,
-    nolmalMatrix: mat4x4<f32>,
+    model: mat4x4<f32>,
+    view: mat4x4<f32>, 
+    projection: mat4x4<f32>,
+    nolmal: mat4x4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> matrices: Matrices;
@@ -19,10 +19,10 @@ fn Vertex(
     @location(1) color: vec4<f32>)
     -> Output {
         var output: Output;
-        let worldPosition = matrices.modelMatrix * vec4<f32>(position.x, position.y, -position.z, 1.0);
-        let viewPosition = matrices.viewMatrix * worldPosition;
-        let clipPosition = matrices.projectionMatrix * viewPosition;
-        output.Position = clipPosition;
+        let world = matrices.model * vec4<f32>(position.x, position.y, -position.z, 1.0);
+        let view = matrices.view * world;
+        let clip = matrices.projection * view;
+        output.Position = clip;
         output.Color = color;
         return output;
     };

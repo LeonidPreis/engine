@@ -12,10 +12,10 @@ export class PointLight {
         this.intensity = intensity;
     }
 
-    public getLightData(): [Float32Array, Uint8ClampedArray, number] {
+    public getLightData(): [Float32Array, Float32Array, number] {
         return [
             this.position.toFloat32Array(),
-            this.color.toUint8ClampedArray(),
+            this.color.toFloat32Array(),
             this.intensity
         ];
     }

@@ -12,12 +12,12 @@ export class ModelLoader {
         }
     }
 
-    private static fillColorBuffer(verticesAmount: number, color: Color | undefined): Uint8ClampedArray {
+    private static fillColorBuffer(verticesAmount: number, color: Color | undefined): Float32Array {
         verticesAmount *= 4;
-        const colors = new Uint8ClampedArray(verticesAmount);
+        const colors = new Float32Array(verticesAmount);
     
         if (color) {
-            const currentColor = color.toUint8ClampedArray();
+            const currentColor = color.toFloat32Array();
             for (let i = 0; i < verticesAmount; i += 4) {
                 colors[i    ] = currentColor[0];    
                 colors[i + 1] = currentColor[1];
@@ -26,7 +26,7 @@ export class ModelLoader {
             }
         } else {
             for (let i = 0; i < verticesAmount; i += 4) {
-                const randomColor = Color.random().toUint8ClampedArray();
+                const randomColor = Color.random().toFloat32Array();
                 colors[i    ] = randomColor[0];    
                 colors[i + 1] = randomColor[1];
                 colors[i + 2] = randomColor[2];

@@ -2,7 +2,7 @@ import { ArcballCamera } from "./camera";
 import { Instance } from "./instance";
 import { WebGPUBufferManager } from "./buffer-manager";
 import { defaultShader } from "./default-shaders"
-import { DrawMode } from "./model";
+import { DrawMode, Model } from "./model";
 
 interface Subscriber {
     update(): void;
@@ -16,13 +16,13 @@ export class WebGPU implements Subscriber{
     private device: GPUDevice | null = null;
     private context: GPUCanvasContext | null = null;
     private bufferManager: WebGPUBufferManager | null = null;
-    private instanceBuffers: 
-        Map<Instance, { 
-            verticesBuffer: GPUBuffer;
-            indicesBuffer:  GPUBuffer;
-            colorsBuffer:   GPUBuffer;
-            normalsBuffer:  GPUBuffer;
-            uniformBuffer:  GPUBuffer;
+    private modelBuffers: 
+        Map<Model, { 
+            vertices: GPUBuffer;
+            indices:  GPUBuffer;
+            colors:   GPUBuffer;
+            normals:  GPUBuffer;
+            uniform:  GPUBuffer;
             bindGroup:   GPUBindGroup; 
         }> = new Map();
 
@@ -68,8 +68,8 @@ export class WebGPU implements Subscriber{
         });
 
         this.instances.forEach(instance => {
-            const buffers = this.bufferManager!.createInstanceBuffers(instance);
-            this.instanceBuffers.set(instance, buffers);
+            const buffers = this.bufferManager!.createModelBuffers(instance.model);
+            this.modelBuffers.set(instance.model, buffers);
         });
     }
 
@@ -98,10 +98,10 @@ export class WebGPU implements Subscriber{
                         },]
                     },
                     {
-                        arrayStride: 4,
+                        arrayStride: 16,
                         attributes: [{
                             shaderLocation: 1,
-                            format: "unorm8x4",
+                            format: "float32x4",
                             offset: 0,
                         },]
                     }
@@ -168,14 +168,14 @@ export class WebGPU implements Subscriber{
             pass.setPipeline(this.createPipeline(drawMode));
     
             for (const instance of instances) {
-                const buffers = this.instanceBuffers.get(instance);
+                const buffers = this.modelBuffers.get(instance.model);
                 if (!buffers) continue;
-                this.bufferManager!.updateUniformBuffer(buffers.uniformBuffer, instance, camera);
+                this.bufferManager!.updateUniformBuffer(buffers.uniform, instance, camera);
                 
                 pass.setBindGroup(0, buffers.bindGroup);
-                pass.setVertexBuffer(0, buffers.verticesBuffer);
-                pass.setVertexBuffer(1, buffers.colorsBuffer);
-                pass.setIndexBuffer(buffers.indicesBuffer, "uint32");
+                pass.setVertexBuffer(0, buffers.vertices);
+                pass.setVertexBuffer(1, buffers.colors);
+                pass.setIndexBuffer(buffers.indices, "uint32");
                 pass.drawIndexed(instance.model.indices.length);
             }
         }
