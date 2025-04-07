@@ -8,7 +8,7 @@ export class Instance {
     
     constructor(
         model: Model,
-        transformation: Transformation,
+        transformation: Transformation = new Transformation(),
     ) {
         this.model = model;
         this.transformation = transformation;

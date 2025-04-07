@@ -2,7 +2,7 @@ import { ArcballCamera } from "./camera";
 import { Instance } from "./instance";
 import { WebGPUBufferManager } from "./buffer-manager";
 import { defaultShader } from "./default-shaders"
-import { DrawMode, Model } from "./model";
+import { PrimitiveType, Model } from "./model";
 
 interface Subscriber {
     update(): void;
@@ -21,7 +21,7 @@ export class WebGPU implements Subscriber{
             vertices: GPUBuffer;
             indices:  GPUBuffer;
             colors:   GPUBuffer;
-            normals:  GPUBuffer;
+            normals:  GPUBuffer | null;
             uniform:  GPUBuffer;
             bindGroup:   GPUBindGroup; 
         }> = new Map();
@@ -73,7 +73,7 @@ export class WebGPU implements Subscriber{
         });
     }
 
-    public createPipeline(drawMode: DrawMode): GPURenderPipeline {
+    public createPipeline(primitive: PrimitiveType): GPURenderPipeline {
         if (!this.device) throw new Error("Device is not initialized.");
         return this.device.createRenderPipeline({
             layout: this.device.createPipelineLayout({
@@ -113,8 +113,8 @@ export class WebGPU implements Subscriber{
                 targets: [{ format: navigator.gpu.getPreferredCanvasFormat(), }]
             },
             primitive: {
-                topology: drawMode === DrawMode.polygon ? "triangle-list" : "line-list",
-                cullMode: drawMode === DrawMode.polygon ? "back" : "none"
+                topology: primitive === PrimitiveType.polygon ? "triangle-list" : "line-list",
+                cullMode: primitive === PrimitiveType.polygon ? "back" : "none"
             },
             depthStencil: {
                 format: "depth24plus",
@@ -157,9 +157,9 @@ export class WebGPU implements Subscriber{
         const encoder = this.device.createCommandEncoder();
         const pass = this.createPassEncoder(encoder);
 
-        const instancesByMode = new Map<DrawMode, Instance[]>();
+        const instancesByMode = new Map<PrimitiveType, Instance[]>();
         instances.forEach(instance => {
-            const mode = instance.model.drawMode;
+            const mode = instance.model.primitive;
             if (!instancesByMode.has(mode)) instancesByMode.set(mode, []);
             instancesByMode.get(mode)!.push(instance);
         });

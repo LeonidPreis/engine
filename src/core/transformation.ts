@@ -1,7 +1,7 @@
 import { Vector4 } from './vector4';
 import { Vector3 } from './vector3';
 import { Matrix4 } from './matrix4';
-import { Euler } from './euler';
+import { Euler, RotationOrder } from './euler';
 import { Quaternion } from './quaternion';
 
 export type Position = Vector3 | Vector4;
@@ -28,7 +28,7 @@ export class Transformation implements ITransformation {
  
     constructor(
         position: Position = new Vector3(0,0,0),
-        orientation: Orientation = new Matrix4,
+        orientation: Orientation = new Euler(0,0,0, RotationOrder.XYZ, true),
         scale: Scale = new Vector3(1,1,1)
     ) {
         this._position = position;

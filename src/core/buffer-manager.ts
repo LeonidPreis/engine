@@ -1,6 +1,6 @@
 import { ArcballCamera } from "./camera";
 import { Instance } from "./instance";
-import { Model } from "./model";
+import { Model, PrimitiveType } from "./model";
 
 
 export class WebGPUBufferManager {
@@ -66,7 +66,7 @@ export class WebGPUBufferManager {
     }
 
     public createNormalsBuffer(model: Model): GPUBuffer {
-        return this.createBuffer(model.normals, GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST);
+        return this.createBuffer(model.normals as Float32Array, GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST);
     }
 
     public createUniformBuffer(size: number): GPUBuffer {
@@ -82,14 +82,14 @@ export class WebGPUBufferManager {
         vertices: GPUBuffer;
         indices:  GPUBuffer;
         colors:   GPUBuffer;
-        normals:  GPUBuffer;
+        normals:  GPUBuffer | null;
         uniform:  GPUBuffer;
         bindGroup:   GPUBindGroup;
     } {
         const vertices = this.createVerticesBuffer(model);
         const indices = this.createIndicesBuffer(model);
         const colors = this.createColorsBuffer(model);
-        const normals = this.createNormalsBuffer(model);
+        const normals = model.primitive != PrimitiveType.line ? this.createNormalsBuffer(model) : null;
         const uniform = this.createUniformBuffer(256);
         const bindGroup = this.device.createBindGroup({
             layout: this.bindGroupLayout,

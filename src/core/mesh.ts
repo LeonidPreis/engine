@@ -1,7 +1,8 @@
 import { Vector3 } from "./vector3";
-import { Model } from "./model";
+import { Model, PrimitiveType } from "./model";
 import { Color} from "./color";
-
+import { Instance } from "./instance";
+    
 export class Mesh {
     static defaultColor = new Color('HEX', '#776F74');
 
@@ -304,5 +305,94 @@ export class Mesh {
         }
 
         return new Model(new Float32Array(vertices), new Uint32Array(indices), color.toFloat32Array());
+    }
+
+    public static getNormals(
+        instance: Instance,
+        distance: number = 0.1,
+        color: Color = Mesh.defaultColor
+        ): Instance {
+        const model = instance.model;
+        let normals: number[] = [];
+        let indices: number[] = [];
+        for (let i = 0; i < model.indices.length; i++) {
+            const vertexIndex = model.indices[i];
+            let xStart = model.vertices[vertexIndex * 3    ];
+            let yStart = model.vertices[vertexIndex * 3 + 1];
+            let zStart = model.vertices[vertexIndex * 3 + 2];
+            normals.push(xStart);
+            normals.push(yStart);
+            normals.push(zStart);
+            let xN = model.normals![i * 3    ];
+            let yN = model.normals![i * 3 + 1];
+            let zN = model.normals![i * 3 + 2]; 
+            let xEnd = xStart + distance * xN;
+            let yEnd = yStart + distance * yN;
+            let zEnd = zStart + distance * zN;
+            normals.push(xEnd);
+            normals.push(yEnd);
+            normals.push(zEnd);
+        }
+        
+        for (let i = 0; i < normals.length / 3; i++) indices.push(i);
+
+        return new Instance(
+            new Model(
+                new Float32Array(normals),
+                new Uint32Array(indices),
+                new Float32Array(color.toFloat32Array()),
+                PrimitiveType.line
+            ),
+            instance.transformation
+        )
+    }
+
+    public static smoothNormals(instance: Instance): void {
+        const currentNormals = instance.model.normals as Float32Array;
+        const normalMap = new Map<number, {sum: [number, number, number],count: number}>();
+        for (let i = 0; i < instance.model.indices.length; i++) {
+            const vertexIndex = instance.model.indices[i];
+            const normalIndex = i * 3
+            
+            const xN = currentNormals[normalIndex    ];
+            const yN = currentNormals[normalIndex + 1];
+            const zN = currentNormals[normalIndex + 2];
+            
+            if (!normalMap.has(vertexIndex)) {
+                normalMap.set(vertexIndex, {
+                    sum: [xN, yN, zN],
+                    count: 1
+                });
+            } else {
+                const entry = normalMap.get(vertexIndex)!;
+                entry.sum[0] += xN;
+                entry.sum[1] += yN;
+                entry.sum[2] += zN;
+                entry.count += 1;
+            }
+        }
+
+        const averagedNormals = new Map<number, [number, number, number]>();
+        for (const [vertexIndex, {sum, count}] of normalMap.entries()) {
+            const length = (sum[0] * sum[0] + sum[1] * sum[1] + sum[2] * sum[2]) ** 0.5;
+            averagedNormals.set(vertexIndex, [
+                sum[0] / length,
+                sum[1] / length,
+                sum[2] / length
+            ]);
+        }
+
+        const smoothNormals = new Float32Array(instance.model.indices.length * 3);
+        for (let i = 0; i < instance.model.indices.length; i++) {
+            const vertexIndex = instance.model.indices[i];
+            const normal = averagedNormals.get(vertexIndex)!;
+            
+            const normalIndex = i * 3;
+            smoothNormals[normalIndex    ] = normal[0];
+            smoothNormals[normalIndex + 1] = normal[1];
+            smoothNormals[normalIndex + 2] = normal[2];
+        }
+
+        instance.model.normals = smoothNormals;
     }
 }
