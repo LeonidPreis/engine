@@ -1,8 +1,9 @@
 import { ArcballCamera } from "./camera";
 import { Instance } from "./instance";
-import { WebGPUBufferManager } from "./buffer-manager";
+import { BufferManager } from "./buffer-manager";
 import { defaultShader } from "./default-shaders"
 import { PrimitiveType, Model } from "./model";
+import { ResourceManager } from "./resource-manager";
 
 interface Subscriber {
     update(): void;
@@ -15,7 +16,9 @@ export class WebGPU implements Subscriber{
     private shader: string = defaultShader;
     private device: GPUDevice | null = null;
     private context: GPUCanvasContext | null = null;
-    private bufferManager: WebGPUBufferManager | null = null;
+    private bufferManager: BufferManager | null = null;
+    private resourceManager: ResourceManager | null = null;
+
     private modelBuffers: 
         Map<Model, { 
             vertices: GPUBuffer;
@@ -23,18 +26,18 @@ export class WebGPU implements Subscriber{
             colors:   GPUBuffer;
             normals:  GPUBuffer | null;
             uniform:  GPUBuffer;
-            bindGroup:   GPUBindGroup; 
+            group: GPUBindGroup;
         }> = new Map();
 
-    constructor(canvas: HTMLCanvasElement, camera: ArcballCamera, instances: Instance[]) {
+    constructor(canvas: HTMLCanvasElement, camera: ArcballCamera, instances: (Instance | null)[]) {
         this.canvas = canvas;
         this.camera = camera;
-        this.instances = instances;
+        this.instances = this.instances = instances.filter((i): i is Instance => i instanceof Instance);
         this.camera.subscribe(this);
     } 
 
     public update(): void {
-        this.render(this.instances, this.camera);
+        this.render(this.camera);
     }
 
     public async init(): Promise<void> {
@@ -48,10 +51,9 @@ export class WebGPU implements Subscriber{
         }
 
         this.device = await adapter.requestDevice();
-        this.bufferManager = new WebGPUBufferManager(this.device);
-        if (!this.device) {
-            throw new Error("WebGPU device is not available.");
-        }
+        if (!this.device) throw new Error("WebGPU device is not available.");
+        this.bufferManager = new BufferManager(this.device);
+        this.resourceManager = new ResourceManager(this.device);
         const ratio = window.devicePixelRatio || 1;
         this.canvas.width = window.innerWidth * ratio;
         this.canvas.height = window.innerHeight * ratio;
@@ -69,22 +71,15 @@ export class WebGPU implements Subscriber{
 
         this.instances.forEach(instance => {
             const buffers = this.bufferManager!.createModelBuffers(instance.model);
-            this.modelBuffers.set(instance.model, buffers);
+            const group = this.resourceManager!.createBindGroup(buffers.uniform);
+            this.modelBuffers.set(instance.model, { ...buffers, group });
         });
     }
 
     public createPipeline(primitive: PrimitiveType): GPURenderPipeline {
         if (!this.device) throw new Error("Device is not initialized.");
         return this.device.createRenderPipeline({
-            layout: this.device.createPipelineLayout({
-                bindGroupLayouts: [this.device.createBindGroupLayout({
-                    entries: [{
-                        binding: 0,
-                        visibility: GPUShaderStage.VERTEX,
-                        buffer: { type: "uniform" },
-                    }],
-                })],
-            }),
+            layout: this.resourceManager!.createPipelineLayout(),
             vertex: {
                 module: this.device.createShaderModule({ code: this.shader, }),
                 entryPoint: "Vertex",
@@ -147,7 +142,6 @@ export class WebGPU implements Subscriber{
     }
 
     public render(
-        instances: Instance[],
         camera: ArcballCamera
     ): void {
         if (!this.device || !this.context || !this.bufferManager) {
@@ -158,7 +152,7 @@ export class WebGPU implements Subscriber{
         const pass = this.createPassEncoder(encoder);
 
         const instancesByMode = new Map<PrimitiveType, Instance[]>();
-        instances.forEach(instance => {
+        this.instances.forEach(instance => {
             const mode = instance.model.primitive;
             if (!instancesByMode.has(mode)) instancesByMode.set(mode, []);
             instancesByMode.get(mode)!.push(instance);
@@ -172,7 +166,7 @@ export class WebGPU implements Subscriber{
                 if (!buffers) continue;
                 this.bufferManager!.updateUniformBuffer(buffers.uniform, instance, camera);
                 
-                pass.setBindGroup(0, buffers.bindGroup);
+                pass.setBindGroup(0, buffers.group);
                 pass.setVertexBuffer(0, buffers.vertices);
                 pass.setVertexBuffer(1, buffers.colors);
                 pass.setIndexBuffer(buffers.indices, "uint32");

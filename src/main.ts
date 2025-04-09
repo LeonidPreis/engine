@@ -14,16 +14,16 @@ import { Color } from "./core/color";
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const camera = new ArcballCamera(
     canvas,
-    new Vector4(0,0,0), new Vector4(4,4,8),
+    new Vector4(0,0,0), new Vector4(0,0,200),
     new PerspectiveProjection({aspect: canvas.clientWidth / canvas.clientHeight})
 );
 
 const axes = new Instance(
     new Model(
         new Float32Array([
-            0,0,0, 4,0,0,
-            0,0,0, 0,4,0,
-            0,0,0, 0,0,4
+            0,0,0, 200,0,0,
+            0,0,0, 0,200,0,
+            0,0,0, 0,0,200
         ]),
         new Uint32Array([
             0,1,2,3,4,5
@@ -38,15 +38,15 @@ const axes = new Instance(
             0,0,255,255,
             0,0,255,255
         ]),
-        PrimitiveType.line
+        PrimitiveType.axis
     )
 );
 
 const cube = new Instance(
     new Model(
         new Float32Array([
-            -1,-1,-1,   1,-1,-1,   1, 1,-1,   -1, 1,-1,
-            -1,-1, 1,   1,-1, 1,   1, 1, 1,   -1, 1, 1,
+            -50,-50,-50,   50,-50,-50,   50, 50,-50,   -50, 50,-50,
+            -50,-50, 50,   50,-50, 50,   50, 50, 50,   -50, 50, 50,
         ]),
         new Uint32Array([
             0,3,1,   3,2,1,   5,1,2,   2,6,5,
@@ -57,38 +57,38 @@ const cube = new Instance(
             0,  0,  0,255,   0,255,  0,255,   255,255,  0,255,   255,0,  0,255,
             0,  0,255,255,   0,255,255,255,   255,255,255,255,   255,0,255,255,
         ]),
+        PrimitiveType.polygon
     )
 );
 
-const plane = new Instance(
-    new Model(
-        new Float32Array([
-            0,0,1, 1,0,1, 1,0,0, 0,.5,0
-        ]),
-        new Uint32Array([
-            0,1,2, 2,3,0
-        ]),
-        new Float32Array([
-            255,0,0,255, 255,0,0,255, 255,0,0,255,
-            0,0,255,255, 0,0,255,255, 0,0,255,255, 
-        ])
-    )
-);
+const triangle = new Instance(new Model(
+    new Float32Array([
+        100,0,0,  0,100,0, 0,0,100
+    ]),
+    new Uint32Array([
+        0,1, 1,2, 2,0
+    ]), 
+    new Float32Array([
+        255,255,0,255, 0,255,255,255, 255,0,255,255
+    ]),
+    PrimitiveType.line
+));
 
-cube.model.smoothNormals()
+cube.model.setPrimitive(PrimitiveType.line);
+triangle.model.setPrimitive(PrimitiveType.axis);
 
 const instances = [
     axes,
     cube,
-    Mesh.getNormals(cube, 0.2, new Color('RGBA', [255,0,0,255])),
-]
-
-
+    Mesh.getNormals(cube, 5, new Color('RGBA', [255,128,64,255])),
+    triangle,
+    Mesh.getNormals(triangle, 5, new Color('RGBA', [255,128,64,255])),
+];
 
 const webGPU = new WebGPU(canvas, camera, instances);
 async function main() {
     await webGPU.init();
-    webGPU.render(instances, camera);
+    webGPU.render(camera);
 }
 main();
 

@@ -3,37 +3,29 @@ import { Instance } from "./instance";
 import { Model, PrimitiveType } from "./model";
 
 
-export class WebGPUBufferManager {
+export class BufferManager {
     private device: GPUDevice;
-    private bindGroupLayout: GPUBindGroupLayout;
     constructor(device: GPUDevice) { 
         this.device = device;
-        this.bindGroupLayout = this.device.createBindGroupLayout({
-            entries: [{
-                binding: 0,
-                visibility: GPUShaderStage.VERTEX,
-                buffer: { type: "uniform" },
-            }],
-        });
     }
 
-    public createBuffer(data: Float32Array | Uint32Array, usage : number): GPUBuffer {
+    public createBuffer(data: Float32Array | Uint32Array | number, usage : number, mapping: boolean = true): GPUBuffer {
         if (!this.device) throw new Error("Device is not initialized.");
         const buffer = this.device.createBuffer({
-            size: data.byteLength,
+            size: typeof data === 'number' ? data : data.byteLength,
             usage: usage,
-            mappedAtCreation: true,
+            mappedAtCreation: mapping && typeof data !== 'number',
         });
 
-        if (data instanceof Float32Array) {
-            new Float32Array(buffer.getMappedRange()).set(data);
-        } else if (data instanceof Uint32Array) {
-            new Uint32Array(buffer.getMappedRange()).set(data);
-        } else {
-            throw new Error("Unsupported data type. Use Float32Array or Uint32Array.");
+        if (mapping && typeof data !== 'number') {
+            if (data instanceof Float32Array) {
+                new Float32Array(buffer.getMappedRange()).set(data);
+            } else if (data instanceof Uint32Array) {
+                new Uint32Array(buffer.getMappedRange()).set(data);
+            }
+            buffer.unmap();
         }
 
-        buffer.unmap();
         return buffer;
     }
 
@@ -49,7 +41,7 @@ export class WebGPUBufferManager {
         if (!this.device) throw new Error("Device is not initialized.");
         const neededLength = model.vertices.length * 4 / 3;
         if (model.colors.length === neededLength) {
-            this.createBuffer(model.colors.map(channel => channel / 255), GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST);
+            return this.createBuffer(model.colors.map(channel => channel / 255), GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST);
         }
         let colors = new Float32Array(neededLength);
         if (model.colors.length === 4) {
@@ -70,12 +62,7 @@ export class WebGPUBufferManager {
     }
 
     public createUniformBuffer(size: number): GPUBuffer {
-        if (!this.device) throw new Error("Device is not initialized.");
-        const buffer = this.device.createBuffer({
-            size: size,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-        return buffer;
+        return this.createBuffer(size, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, false);
     }
 
     public createModelBuffers(model: Model): {
@@ -84,19 +71,14 @@ export class WebGPUBufferManager {
         colors:   GPUBuffer;
         normals:  GPUBuffer | null;
         uniform:  GPUBuffer;
-        bindGroup:   GPUBindGroup;
     } {
         const vertices = this.createVerticesBuffer(model);
         const indices = this.createIndicesBuffer(model);
         const colors = this.createColorsBuffer(model);
         const normals = model.primitive != PrimitiveType.line ? this.createNormalsBuffer(model) : null;
         const uniform = this.createUniformBuffer(256);
-        const bindGroup = this.device.createBindGroup({
-            layout: this.bindGroupLayout,
-            entries: [{ binding: 0, resource: { buffer: uniform } }],
-        });
 
-        return { vertices, indices, colors, normals, uniform, bindGroup };
+        return { vertices, indices, colors, normals, uniform };
     }
 
     public updateUniformBuffer(uniformBuffer: GPUBuffer, instance: Instance, camera: ArcballCamera) {
