@@ -350,4 +350,85 @@ export class Mesh {
             instance.transformation
         )
     }
+
+    static grid(
+        width: number,
+        length: number,
+        widthSegments: number = 1,
+        lengthSegments: number = 1,
+        color = Mesh.defaultColor
+        ): Model {
+        let vertices: number[] = [];
+        let indices: number[] = [];
+        function *generateGridVertices(
+            width: number, 
+            length: number, 
+            widthSegments: number, 
+            lengthSegments: number
+            ): Generator<number[], void, unknown> {
+            const widthStep = width / widthSegments;
+            const lengthStep = length / lengthSegments;
+            const widthHalf = width / 2;
+            const lengthHalf = length / 2;
+
+            for (let i = 0; i <= widthSegments; i++) {
+                const x = -widthHalf + i * widthStep;
+                yield [x, 0, -lengthHalf]; yield [x, 0,  lengthHalf];
+            }
+
+            for (let j = 0; j <= lengthSegments; j++) {
+                const z = -lengthHalf + j * lengthStep;
+                yield [-widthHalf, 0, z]; yield [ widthHalf, 0, z];
+            }
+        }
+
+        for (const [x, y, z] of generateGridVertices(width, length, widthSegments, lengthSegments)) {
+            vertices.push(x, y, z);
+            indices.push(indices.length);
+        }
+        
+        return new Model(
+            new Float32Array(vertices),
+            new Uint32Array(indices),
+            new Float32Array(color.toFloat32Array()),
+            PrimitiveType.axis
+        );
+    }
+
+    static circle(
+        diameter: number,
+        sectors: number,
+        color = Mesh.defaultColor
+        ): Model {
+        let vertices = [];
+        let indices = [];
+        diameter /= 2;
+        function *generateCircle(
+            radius: number,
+            sectors: number
+            ): Generator<number[], void, unknown> {
+            for (let i = 0; i < sectors; i++) {
+                const angle = i * 2 * Math.PI / sectors;
+                yield [
+                    radius * Math.cos(angle),
+                    radius * Math.sin(angle),
+                    0,
+                    i,
+                    (i + 1) % sectors
+                ];
+            }
+        }
+
+        for (const [x, y, z, a, b] of generateCircle(diameter, sectors)) {
+            vertices.push(x, y, z);
+            indices.push(a, b);
+        }
+
+        return new Model(
+            new Float32Array(vertices),
+            new Uint32Array(indices),
+            new Float32Array(color.toFloat32Array()),
+            PrimitiveType.axis
+        );
+    }
 }
