@@ -431,4 +431,70 @@ export class Mesh {
             PrimitiveType.axis
         );
     }
+
+    public static arrow(
+        from: Vector3,
+        to: Vector3,
+        color: Color = Mesh.defaultColor,
+        tipLength: number = 2.5,
+        shaftDiameter: number = 0.05,
+        arrowDiameter: number = 0.5,
+        sectors: number = 8,
+    ): Model {
+        let vertices: number[] = [from.x, from.y, from.z, to.x, to.y, to.z];
+        let indices: number[] = [];
+        
+        function* circlePoint(
+            u: Vector3,
+            v: Vector3,
+            angle: number,
+            radius: number,
+            center: Vector3,
+            ): Generator<[number, number, number], void, unknown> {
+            const offset: Vector3 = u.scale(Math.cos(angle) * radius).add(v.scale(Math.sin(angle) * radius));
+            const point: Vector3 = center.add(offset);
+            yield [point.x, point.y, point.z];
+        }
+        
+        function* generateArrowVertices(
+            from: Vector3,
+            to: Vector3,
+            tipLength: number,
+            shaftDiameter: number,
+            arrowDiameter: number,
+            sectors: number
+            ): Generator<[number, number, number], void, unknown> {
+            const axis: Vector3 = Vector3.between(from, to).normalize();
+            const [u,v]: [Vector3, Vector3] = axis.orthonormalBasis();
+            const center = to.subtract(axis.scale(tipLength));
+            for (let i = 0; i < sectors; i++) {
+                const theta = (2 * Math.PI * i) / sectors;
+                yield* circlePoint(u, v, theta, shaftDiameter, from);
+                yield* circlePoint(u, v, theta, shaftDiameter, center);
+                yield* circlePoint(u, v, theta, arrowDiameter, center);
+            }
+        }
+
+        function* generateArrowIndices(verticesAmount: number): Generator<number, void, undefined> {
+            let l = verticesAmount / 3 - 2;
+            for (let i = 3; i < l; i += 3) {
+                yield* [0, i - 1, i + 2, i - 1, i, i + 2, i, i + 3, i + 2, i, i + 1, i + 3, i + 1, i + 4, i + 3, i + 1, 1, i + 4];
+            }
+            l += 2;
+            yield* [0, l - 3, 2, l - 3, l - 2, 2, l - 2, 3, 2, l - 2, l - 1, 3, l - 1, 4, 3, l - 1, 1, 4];
+        }
+        
+        for (const [x, y, z] of generateArrowVertices(from, to, tipLength, shaftDiameter, arrowDiameter, sectors)) {
+            vertices.push(x, y, z);
+        }               
+
+        indices.push(...generateArrowIndices(vertices.length));
+    
+        return new Model(
+            new Float32Array(vertices),
+            new Uint32Array(indices),
+            new Float32Array(color.toFloat32Array()),
+            PrimitiveType.polygon
+        )
+    }
 }

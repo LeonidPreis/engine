@@ -18,35 +18,11 @@ const camera = new ArcballCamera(
     new PerspectiveProjection({aspect: canvas.clientWidth / canvas.clientHeight})
 );
 
-const axes = new Instance(
-    new Model(
-        new Float32Array([
-            0,0,0, 200,0,0,
-            0,0,0, 0,200,0,
-            0,0,0, 0,0,200
-        ]),
-        new Uint32Array([
-            0,1,2,3,4,5
-        ]),
-        new Float32Array([
-            255,0,0,255,
-            255,0,0,255,
-
-            0,255,0,255,
-            0,255,0,255,
-
-            0,0,255,255,
-            0,0,255,255
-        ]),
-        PrimitiveType.axis
-    )
-);
-
 const cube = new Instance(
     new Model(
         new Float32Array([
-            -50,-50,-50,   50,-50,-50,   50, 50,-50,   -50, 50,-50,
-            -50,-50, 50,   50,-50, 50,   50, 50, 50,   -50, 50, 50,
+            -10,-10,-10,   10,-10,-10,   10, 10,-10,   -10, 10,-10,
+            -10,-10, 10,   10,-10, 10,   10, 10, 10,   -10, 10, 10,
         ]),
         new Uint32Array([
             0,3,1,   3,2,1,   5,1,2,   2,6,5,
@@ -61,28 +37,15 @@ const cube = new Instance(
     )
 );
 
-const triangle = new Instance(new Model(
-    new Float32Array([
-        100,0,0,  0,100,0, 0,0,100
-    ]),
-    new Uint32Array([
-        0,1, 1,2, 2,0
-    ]), 
-    new Float32Array([
-        255,255,0,255, 0,255,255,255, 255,0,255,255
-    ]),
-    PrimitiveType.line
-));
-
-cube.model.setPrimitive(PrimitiveType.line);
-triangle.model.setPrimitive(PrimitiveType.axis);
+const axisX = new Instance(Mesh.arrow(new Vector3(0,0,0), new Vector3(20,0,0), new Color('RGBA', [255,0,0,255])));
+const axisY = new Instance(Mesh.arrow(new Vector3(0,0,0), new Vector3(0,20,0), new Color('RGBA', [0,255,0,255])));
+const axisZ = new Instance(Mesh.arrow(new Vector3(0,0,0), new Vector3(0,0,20), new Color('RGBA', [0,0,255,255])));
 
 const instances = [
-    axes,
+    axisX,
+    axisY,
+    axisZ,
     cube,
-    Mesh.getNormals(cube, 5, new Color('RGBA', [255,128,64,255])),
-    triangle,
-    Mesh.getNormals(triangle, 5, new Color('RGBA', [255,128,64,255])),
 ];
 
 const webGPU = new WebGPU(canvas, camera, instances);

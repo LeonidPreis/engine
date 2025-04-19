@@ -43,7 +43,7 @@ export class Vector3 {
     cross(v3: Vector3): Vector3 {
         return new Vector3(
             this.y * v3.z - this.z * v3.y,
-          -(this.z * v3.x - this.x * v3.z),
+            this.z * v3.x - this.x * v3.z,
             this.x * v3.y - this.y * v3.x,
         );
     }
@@ -75,5 +75,15 @@ export class Vector3 {
 
     public toFloat32Array(): Float32Array {
         return new Float32Array([this.x, this.y, this.z]);
+    }
+
+    public orthonormalBasis(epsilon: number = 1e-6): [Vector3, Vector3] {
+        let forward: Vector3 = this.normalize();
+        let up: Vector3 = Math.abs(forward.y) < 1.0 - epsilon
+            ? new Vector3(0, 1, 0)
+            : new Vector3(1, 0, 0);
+        let right: Vector3 = up.cross(forward).normalize();
+        up = forward.cross(right).normalize();
+        return [right, up];
     }
 }
