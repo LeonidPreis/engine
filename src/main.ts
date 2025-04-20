@@ -2,7 +2,7 @@ import { ArcballCamera } from "./core/camera";
 import { Euler, RotationOrder } from "./core/euler";
 import { Instance } from "./core/instance";
 import { PrimitiveType, Model } from "./core/model";
-import { PerspectiveProjection } from "./core/projection";
+import { OrthographicProjection, OrthographicProjectionDescriptor, PerspectiveProjection } from "./core/projection";
 import { WebGPU } from "./core/renderer";
 import { Transformation } from "./core/transformation";
 import { Vector3 } from "./core/vector3";
@@ -12,10 +12,24 @@ import { Color } from "./core/color";
 
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+const ratio = window.devicePixelRatio || 1;
+canvas.width = window.innerWidth * ratio;
+canvas.height = window.innerHeight * ratio;
+canvas.style.width = `${window.innerWidth}px`;
+canvas.style.height = `${window.innerHeight}px`;
+
 const camera = new ArcballCamera(
     canvas,
-    new Vector4(0,0,0), new Vector4(0,0,200),
-    new PerspectiveProjection({aspect: canvas.clientWidth / canvas.clientHeight})
+    new Vector4(0,0,0),
+    new Vector4(0,0,100),
+    new OrthographicProjection({
+        left: -canvas.width / 2,
+        right: canvas.width / 2,
+        top: canvas.height / 2,
+        bottom: -canvas.height / 2,
+        near: 0.1,
+        far: 500,
+    } as OrthographicProjectionDescriptor)
 );
 
 const cube = new Instance(

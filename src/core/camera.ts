@@ -1,7 +1,7 @@
 import { Vector4 } from './vector4'
 import { Matrix4 } from './matrix4'
 import { Quaternion } from './quaternion';
-import { IProjection, ProjectionDescriptor } from './projection';
+import { IProjection, OrtographicProjectionDescriptor, ProjectionDescriptor, ProjectionType } from './projection';
 
 interface Subscriber {
     update(): void;
@@ -25,7 +25,6 @@ export class ArcballCamera {
     private up: Vector4;
     private forward: Vector4;
     private radius: number;
-    public scale: number;
     private rotationQuaternion: Quaternion;
     private rotationMatrix: Matrix4;
     private lastMouseX: number;
@@ -50,7 +49,6 @@ export class ArcballCamera {
         this.up = this.forward.cross(this.right).normalize();
 
         this.radius = target.distance(position);
-        this.scale = 1;
 
         this.rotationQuaternion = Quaternion.fromAngleAxis(0, this.position).normalize();
         this.rotationMatrix = this.rotationQuaternion.toRotationMatrix();
@@ -68,8 +66,10 @@ export class ArcballCamera {
     private handleZoom(event: WheelEvent): void {
         const zoom = event.deltaY < 0 ? 1.1 : 0.9;
         this.radius *= zoom;
-        this.scale *= zoom;
-        this.position = this.target.subtract(this.forward.scale(this.radius))
+        this.position = this.target.subtract(this.forward.scale(this.radius));
+        if (this.projection.zoom) {
+            this.projection.zoom(zoom);
+        }
         this.updateTransform();
     }
     

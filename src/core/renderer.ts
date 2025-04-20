@@ -53,13 +53,7 @@ export class WebGPU implements Subscriber{
         this.device = await adapter.requestDevice();
         if (!this.device) throw new Error("WebGPU device is not available.");
         this.bufferManager = new BufferManager(this.device);
-        this.resourceManager = new ResourceManager(this.device);
-        const ratio = window.devicePixelRatio || 1;
-        this.canvas.width = window.innerWidth * ratio;
-        this.canvas.height = window.innerHeight * ratio;
-        this.canvas.style.width = `${window.innerWidth}px`;
-        this.canvas.style.height = `${window.innerHeight}px`;
-       
+        this.resourceManager = new ResourceManager(this.device);       
         this.context = this.canvas.getContext("webgpu") as GPUCanvasContext;
         this.context.configure({
             device: this.device,
