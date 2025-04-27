@@ -1,7 +1,7 @@
 import { Vector4 } from './vector4'
 import { Matrix4 } from './matrix4'
 import { Quaternion } from './quaternion';
-import { IProjection, OrtographicProjectionDescriptor, ProjectionDescriptor, ProjectionType } from './projection';
+import { IProjection, OrthographicProjectionDescriptor, ProjectionDescriptor, ProjectionType } from './projection';
 
 interface Subscriber {
     update(): void;
@@ -19,14 +19,14 @@ export class ArcballCamera {
         this.subscribers.forEach(subscriber => subscriber.update());
     }
     private canvas: HTMLCanvasElement;
-    private target: Vector4;
-    private position: Vector4;
-    private right: Vector4;
-    private up: Vector4;
-    private forward: Vector4;
-    private radius: number;
-    private rotationQuaternion: Quaternion;
-    private rotationMatrix: Matrix4;
+    private target!: Vector4;
+    private position!: Vector4;
+    private right!: Vector4;
+    private up!: Vector4;
+    private forward!: Vector4;
+    private radius!: number;
+    private rotationQuaternion!: Quaternion;
+    private rotationMatrix!: Matrix4;
     private lastMouseX: number;
     private lastMouseY: number;
     private isRotating: boolean;
@@ -39,28 +39,29 @@ export class ArcballCamera {
         position: Vector4,
         projection: IProjection<ProjectionDescriptor>
     ) {
+        this.subscribers = [];
         this.canvas = canvas;
-        this.target = target;
-        this.position = position;
-        this.projection = projection;
-
-        this.forward = this.target.subtract(position).normalize();
-        this.right = new Vector4(0,1,0,1).cross(this.forward).normalize();
-        this.up = this.forward.cross(this.right).normalize();
-
-        this.radius = target.distance(position);
-
-        this.rotationQuaternion = Quaternion.fromAngleAxis(0, this.position).normalize();
-        this.rotationMatrix = this.rotationQuaternion.toRotationMatrix();
-
-        this.updateTransform();
-
+        this.init(target, position);
+        this.projection = projection;  
+        this.rotationSpeed = 0.01;
         this.lastMouseX = 0;
         this.lastMouseY = 0;
-
         this.isRotating = false;
         this.canvas.addEventListener('wheel', this.handleZoom.bind(this), false);
         this.canvas.addEventListener('mousedown', this.startRotation.bind(this), false);
+    }
+
+    init(target: Vector4, position: Vector4): void {
+        [this.target, this.position] = [target, position];
+        this.radius = this.target.distance(this.position);
+        this.forward = this.target.subtract(this.position).normalize();
+        [this.right, this.up] = this.forward.orthonormalBasis();
+        this.rotationMatrix = Matrix4.fromBasis(this.right, this.up, this.forward);
+        this.rotationQuaternion = Quaternion.fromRotationMatrix(this.rotationMatrix).normalize();
+        if (isNaN(this.rotationQuaternion.w)) {
+            this.rotationQuaternion = new Quaternion(1, 0, 0, 0); // единичный
+        }        
+        this.updateTransform();
     }
 
     private handleZoom(event: WheelEvent): void {
@@ -101,7 +102,7 @@ export class ArcballCamera {
         this.right = this.rotationMatrix.getRightVector();
         this.up = this.rotationMatrix.getUpVector();
         this.forward = this.rotationMatrix.getForwardVector();
-        this.position = this.target.add(this.rotationQuaternion.applyToVector(new Vector4(0, 0, -this.radius, 1)));
+        this.position = this.target.subtract(this.forward.scale(this.radius));
         this.notify();
     }
 

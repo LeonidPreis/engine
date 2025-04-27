@@ -28,8 +28,8 @@ export class Vector3 {
         return new Vector3(this.x * s, this.y * s, this.z * s);
     }
 
-    add(v3: Vector3): Vector3 {
-        return new Vector3(this.x + v3.x, this.y + v3.y, this.z + v3.z);
+    public add(vB: Vector3): Vector3 {
+        return new Vector3(this.x + vB.x, this.y + vB.y, this.z + vB.z);
     }
 
     subtract(v3: Vector3): Vector3 {
@@ -48,10 +48,10 @@ export class Vector3 {
         );
     }
 
-    public angle(v3: Vector3, degrees: boolean = false): number {
-        const lengths = this.length() * v3.length();
+    public angle(vB: Vector3, degrees: boolean = false): number {
+        const lengths = this.length() * vB.length();
         if (lengths === 0) { return 0; }
-        const angle: number = Math.acos(this.dot(v3) / lengths);
+        const angle: number = Math.acos(this.dot(vB) / lengths);
         if (degrees) {
             return angle * 180 / Math.PI;
         } else {

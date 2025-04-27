@@ -46,8 +46,8 @@ export class PerspectiveProjection implements IProjection<PerspectiveProjectionD
         return new Matrix4(
             1.0 / (Math.tan(FOVY / 2) * aspect), 0,                        0,                    0,
             0,                                   1.0 / Math.tan(FOVY / 2), 0,                    0,
-            0,                                   0,                        far / (far - near), -(far * near) / (far - near),
-            0,                                   0,                        1,                    0
+            0,                                   0,                        far / (far - near), (far * near) / (far - near),
+            0,                                   0,                       -1,                    0
         );
     }
 }

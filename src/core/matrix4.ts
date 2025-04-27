@@ -190,4 +190,13 @@ export class Matrix4 {
             this.m41, this.m42, this.m43, this.m44
         ]);
     }
+
+    static fromBasis(right: Vector4, up: Vector4, forward: Vector4): Matrix4 {
+        return new Matrix4(
+            right.x,   right.y,   right.z,   0,
+            up.x,      up.y,      up.z,      0,
+            forward.x, forward.y, forward.z, 0,
+            0,         0,         0,         1 
+        );
+    }
 }

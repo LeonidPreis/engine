@@ -56,9 +56,9 @@ export class Vector4 {
     public cross(v4: Vector4): Vector4 {
         return new Vector4(
             this.y * v4.z - this.z * v4.y,
-          -(this.z * v4.x - this.x * v4.z),
+            this.z * v4.x - this.x * v4.z,
             this.x * v4.y - this.y * v4.x,
-            1
+            0
         );
     }
 
@@ -90,4 +90,17 @@ export class Vector4 {
     public toFloat32Array(): Float32Array {
         return new Float32Array([this.x, this.y, this.z, this.w]);
     }
+
+    public orthonormalBasis(epsilon = 1e-6): [Vector4, Vector4] {
+        let forward = this.normalize();
+        var right, up;
+        if (Math.abs(forward.y) < 1.0 - epsilon) {
+            right = new Vector4(0, 1, 0, 0).cross(forward).normalize();
+            up = forward.cross(right).normalize();
+        } else {
+            up = new Vector4(1, 0, 0, 0).cross(forward).normalize();
+            right = forward.cross(up).normalize();
+        }
+        return [right, up];
+    } 
 }
