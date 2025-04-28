@@ -1,6 +1,6 @@
-### Vector3.angle
+### [Vector3](./vector3.md).angle
 #### Description
-Calculates the angle between the current vector and vector B and returns the angle value in radians or degrees. As the dot product can be calculated as the product of the lengths of the vectors with the cosine of the angle between them, the angle can be expressed from this as shown in the formulas below.
+Calculates the angle between the current vector and vector B and returns the angle value in radians or degrees. As the dot product can be calculated as the product of the lengths of the vectors with the cosine of the angle between them, the angle can be expressed from this as shown in the formulas below. The vectors may not be normalized.
 ```math
 \overline{a}\cdot\overline{b}=\left|\overline{a}\right|\cdot\left|\overline{b}\right|\cdot\cos(\varphi)
 ```
@@ -42,5 +42,5 @@ const angleXY = vectorX.angle(vectorY);
 ```
 
 #### See also
-- Vector3.dot
+- [Vector3.dot](./vector3.dot.md)
 - Vector3.length

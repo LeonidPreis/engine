@@ -1,4 +1,4 @@
-### Vector3.add
+### [Vector3](./vector3.md).add
 #### Description
 Adds vector B to the current vector and returns their sum. The operation does not mutate the original vector and returns a new vector.
 ```math
