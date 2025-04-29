@@ -43,4 +43,4 @@ const angleXY = vectorX.angle(vectorY);
 
 #### See also
 - [Vector3.dot](./vector3.dot.md)
-- Vector3.length
+- [Vector3.length](./vector3.length.md)
