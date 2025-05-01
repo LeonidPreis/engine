@@ -1,9 +1,7 @@
 ### [Vector3](./vector3.md).distance
 #### Description
 Calculates the distance between two points defined as **`Vector3`**.
-```math
-d = \sqrt{\left|b_{x}-a_{x}\right|^{2}+\left|b_{y}-a_{y}\right|^{2}+\left|b_{z}-a_{z}\right|^{2}}
-```
+![](/docs/figures/vectors/vector3.distance.formula.png)
 
 #### Signature
 ```typescript

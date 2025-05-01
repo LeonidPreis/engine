@@ -1,9 +1,7 @@
 ### [Vector3](./vector3.md).length
 #### Description
 Calculates the length (magnitude) of the current vector. The length represents the distance from the origin to the point defined by the vector.
-```math
-\left|\overline{a}\right|=\sqrt{a_{x}^2+a_{y}^2+a_{z}^2}
-```
+![](/docs/figures/vectors/vector3.length.formula.png)
 
 #### Signature
 ```typescript

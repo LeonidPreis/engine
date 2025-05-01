@@ -1,10 +1,7 @@
 ### [Vector3](./vector3.md).subtract
 #### Description
 Subtracts the given vector vB from the current vector and returns the resulting vector. Computes the component-wise difference between the vectors. Does not mutate the original vector — it returns a new Vector3 instance.
-```math
-\overline{c}=\overline{a}-\overline{b}=\left(a_{x}-b_{x},a_{y}-b_{y},a_{z}-b_{z}\right)
-```
-
+![](/docs/figures/vectors/vector3.subtract.formula.png)
 #### Signature
 ```typescript
 public subtract(vB: Vector3): Vector3
@@ -20,11 +17,12 @@ public subtract(vB: Vector3): Vector3
 |**`Vector3`**|A new vector equal to the current vector minus vB. The original vectors remain unchanged.|
 
 #### Examples
+![](/docs/figures/vectors/vector.subtract.png)
 ```typescript
-const vectorA: Vector3 = new Vector3(1, 2, 3);
-const vectorB: Vector3 = new Vector3(4, 5, 6);
+const vectorA: Vector3 = new Vector3( 2,-3, 0);
+const vectorB: Vector3 = new Vector3(-1,-2, 0);
 const vectorC: Vector3 = vectorA.subtract(vectorB);
-// Expected result: Vector3 {x: -3, y: -3, z: -3}.
+// Expected result: Vector3 {x: 3, y: -1, z: 0}.
 ```
 
 #### See also

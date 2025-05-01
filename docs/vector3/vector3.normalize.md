@@ -2,9 +2,7 @@
 #### Description
 Returns a new normalized (unit length) vector based on the current vector without modifying the original.
 Normalization preserves the direction of the vector but scales its length to exactly 1:
-```math
-\widehat{a}=\frac{\overline{a}}{\left|\overline{a}\right|}
-```
+![](/docs/figures/vectors/vector3.normalize.formula.png)
 
 #### Signature
 ```typescript

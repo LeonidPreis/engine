@@ -1,9 +1,7 @@
 ### [Vector3](./vector3.md).dot
 #### Description
 Calculates the dot product (scalar product) of vectors whose numerical value is equal to the cosine of the angle between them. Both vectors must be **normalized**.
-```math
-\overline{a}\cdot\overline{b}=\cos\angle\overline{a},\overline{b}=\sum_{i=1}^{n}a_{i}b_{i}=a_{x}b_{x}+a_{y}b_{y}+a_{z}b_{z}
-```
+![](/docs/figures/vectors/vector3.dot.formula.png)
 
 #### Signature
 ```typescript
@@ -27,10 +25,11 @@ public dot(vB: Vector3): number
 |**0**|Vectors are *orthogonal* (perpendicular) to each other.|
 
 #### Examples
+![](/docs/figures/vectors/vector.angle.png)
 ```typescript
 const vectorA: Vector3 = new Vector3(3, 2, 0).normalize();
 const vectorB: Vector3 = new Vector3(2,-1, 0).normalize();
-const dotAB: number = vectorA.dot(vectorB);
+const cosPhi: number = vectorA.dot(vectorB);
 // Expected result: 0.49613893835683387;
 ```
 
