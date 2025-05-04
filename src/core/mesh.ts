@@ -465,7 +465,7 @@ export class Mesh {
             sectors: number
             ): Generator<[number, number, number], void, unknown> {
             const axis: Vector3 = Vector3.between(from, to).normalize();
-            const [u,v]: [Vector3, Vector3] = axis.orthonormalBasis();
+            const [u,v,w]: [Vector3, Vector3, Vector3] = axis.orthonormalBasis();
             const center = to.subtract(axis.scale(tipLength));
             for (let i = 0; i < sectors; i++) {
                 const theta = (2 * Math.PI * i) / sectors;

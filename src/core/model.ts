@@ -32,6 +32,10 @@ export class Model implements IModel {
         this.normals = primitive === PrimitiveType.axis ? new Float32Array([]) : this.calculateNormals();
     }
 
+    public clone(): Model {
+        return new Model(this.vertices, this.indices, this.colors, this.primitive);
+    }
+
     public verticesAmount(): number {
         return this.vertices.length;
     }

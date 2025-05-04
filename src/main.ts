@@ -1,4 +1,4 @@
-import { ArcballCamera } from "./core/camera";
+import { Camera } from "./core/camera";
 import { Euler, RotationOrder } from "./core/euler";
 import { Instance } from "./core/instance";
 import { PrimitiveType, Model } from "./core/model";
@@ -18,64 +18,64 @@ canvas.height = window.innerHeight * ratio;
 canvas.style.width = `${window.innerWidth}px`;
 canvas.style.height = `${window.innerHeight}px`;
 
-const camera = new ArcballCamera(
+const camera = new Camera(
     canvas,
     new Vector4(0,0,0),
-    new Vector4(100,100,100),
+    new Vector4(1000,1000,1000),
     new OrthographicProjection({
         left: -canvas.width / 2,
         right: canvas.width / 2,
         top: canvas.height / 2,
         bottom: -canvas.height / 2,
         near: 0.1,
-        far: 500,
+        far: 3000,
     } as OrthographicProjectionDescriptor)
 );
 
-const cube = new Instance(
-    new Model(
-        new Float32Array([
-            -10, -10, -10, 10, -10, -10, 10, 10, -10, -10, 10, -10,
-            -10, -10, 10, 10, -10, 10, 10, 10, 10, -10, 10, 10,
-        ]), new Uint32Array([
-            0, 3, 1, 3, 2, 1, 5, 1, 2, 2, 6, 5,
-            1, 5, 4, 0, 1, 4, 7, 2, 3, 7, 6, 2,
-            5, 6, 7, 4, 5, 7, 4, 7, 3, 0, 4, 3
-        ]), new Float32Array([
-            0, 0, 0, 255,
-            255, 0, 0, 255,
-            255, 255, 0, 255,
-            0, 255, 0, 255,
-            0, 0, 255, 255,
-            255, 0, 255, 255,
-            255, 255, 255, 255,
-            0, 255, 255, 255,
-        ]), PrimitiveType.polygon
-    )
-);
+const cube = new Model(
+    new Float32Array([
+        -10, -10, -10, 10, -10, -10, 10, 10, -10, -10, 10, -10,
+        -10, -10, 10, 10, -10, 10, 10, 10, 10, -10, 10, 10,
+    ]), new Uint32Array([
+        0, 3, 1, 3, 2, 1, 5, 1, 2, 2, 6, 5,
+        1, 5, 4, 0, 1, 4, 7, 2, 3, 7, 6, 2,
+        5, 6, 7, 4, 5, 7, 4, 7, 3, 0, 4, 3
+    ]), new Float32Array([
+        0, 0, 0, 255,
+        255, 0, 0, 255,
+        255, 255, 0, 255,
+        0, 255, 0, 255,
+        0, 0, 255, 255,
+        255, 0, 255, 255,
+        255, 255, 255, 255,
+        0, 255, 255, 255,
+    ]), PrimitiveType.polygon
+)
 
-const axisX = new Instance(Mesh.arrow(new Vector3(0,0,0), new Vector3(20,0,0), new Color('RGBA', [255,0,0,255])));
-const axisY = new Instance(Mesh.arrow(new Vector3(0,0,0), new Vector3(0,20,0), new Color('RGBA', [0,255,0,255])));
-const axisZ = new Instance(Mesh.arrow(new Vector3(0,0,0), new Vector3(0,0,20), new Color('RGBA', [0,0,255,255])));
-const target = new Instance(Mesh.sphere(3,16,8,new Color('RGBA',[128,0,128,255])),
-new Transformation(new Vector4(40,50,-60)));
-const position = new Instance(Mesh.sphere(3,16,8,new Color('RGBA',[128,0,128,255])),
-new Transformation(new Vector4(80,100,-20)));
-const direction = new Instance(Mesh.arrow(new Vector3(40,50,60), new Vector3(80,100,20), new Color('RGBA', [255,255,255,255]),5,3,1));
-const forward = new Instance(Mesh.arrow(new Vector3(80,100,20), new Vector3(72,110,12), new Color('RGBA', [255,255,0,255]),5,3,1));
-const right = new Instance(Mesh.arrow(new Vector3(80,100,20), new Vector3(72,100,12), new Color('RGBA', [0,255,255,255]),5,3,1));
-const up = new Instance(Mesh.arrow(new Vector3(80,100,20), new Vector3(75,108,25), new Color('RGBA', [255,0,255,255]),5,3,1));
+const axisX = new Instance(Mesh.arrow(new Vector3(0,0,0), new Vector3(50,0,0), new Color('RGBA', [255,0,0,255]),10,0.5,2));
+const axisY = new Instance(Mesh.arrow(new Vector3(0,0,0), new Vector3(0,50,0), new Color('RGBA', [0,255,0,255]),10,0.5,2));
+const axisZ = new Instance(Mesh.arrow(new Vector3(0,0,0), new Vector3(0,0,50), new Color('RGBA', [0,0,255,255]),10,0.5,2));
 
+const rad = Math.PI / 180;
 const instances = [
     axisX,
     axisY,
     axisZ,
-    position,
-    direction,
-    forward,
-    right,
-    up,
-    //cube,
+    new Instance(cube.clone(), new Transformation(new Vector3(-250, -250, -250))),
+    new Instance(cube.clone(), new Transformation(new Vector3(-250, 250, -250))),
+    new Instance(cube.clone(), new Transformation(new Vector3(250, 250, -250))),
+    new Instance(cube.clone(), new Transformation(new Vector3(250, -250, -250))),
+    new Instance(cube.clone(), new Transformation(new Vector3(-250, -250, 250))),
+    new Instance(cube.clone(), new Transformation(new Vector3(-250, 250, 250))),
+    new Instance(cube.clone(), new Transformation(new Vector3(250, 250, 250))),
+    new Instance(cube.clone(), new Transformation(new Vector3(250, -250, 250))),
+    new Instance(cube.clone(), new Transformation(new Vector3(-250, 0, 0), new Euler(10 * rad, 20 * rad, 30 * rad, RotationOrder.XYZ, true), new Vector3(0.5, 0.5, 0.5))),
+    new Instance(cube.clone(), new Transformation(new Vector3(250, 0, 0), new Euler(10 * rad, 20 * rad, 30 * rad, RotationOrder.XYZ, true), new Vector3(0.5, 0.5, 0.5))),
+    new Instance(cube.clone(), new Transformation(new Vector3(0, 250, 0), new Euler(10 * rad, 20 * rad, 30 * rad, RotationOrder.XYZ, true), new Vector3(0.5, 0.5, 0.5))),
+    new Instance(cube.clone(), new Transformation(new Vector3(0, -250, 0), new Euler(10 * rad, 20 * rad, 30 * rad, RotationOrder.XYZ, true), new Vector3(0.5, 0.5, 0.5))),
+    new Instance(cube.clone(), new Transformation(new Vector3(0, 0, -250), new Euler(10 * rad, 20 * rad, 30 * rad, RotationOrder.XYZ, true), new Vector3(0.5, 0.5, 0.5))),
+    new Instance(cube.clone(), new Transformation(new Vector3(0, 0, 250), new Euler(10 * rad, 20 * rad, 30 * rad, RotationOrder.XYZ, true), new Vector3(0.5, 0.5, 0.5))),
+    new Instance(cube.clone(), new Transformation(new Vector3(0, 0, 0))),
 ];
 
 const webGPU = new WebGPU(canvas, camera, instances);

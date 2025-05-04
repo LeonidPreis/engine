@@ -1,6 +1,13 @@
 import { Matrix4 } from "./matrix4";
 
 export class Vector4 {
+    static readonly leftward: Vector4 = new Vector4(-1, 0, 0, 0);
+    static readonly rightward: Vector4 = new Vector4(1, 0, 0, 0);
+    static readonly upward: Vector4 = new Vector4(0, 1, 0, 0);
+    static readonly downward: Vector4 = new Vector4(0,-1, 0, 0);
+    static readonly forward: Vector4 = new Vector4(0, 0, 1, 0);
+    static readonly backward: Vector4 = new Vector4(0, 0,-1, 0);
+    static readonly zero: Vector4 = new Vector4(0, 0, 0, 0);
     constructor(public x: number = 0, public y: number = 0, public z: number = 0, public w: number = 1) {}
 
     public equal(v4: Vector4, precision: number = 1e-6): boolean {
@@ -91,16 +98,16 @@ export class Vector4 {
         return new Float32Array([this.x, this.y, this.z, this.w]);
     }
 
-    public orthonormalBasis(epsilon = 1e-6): [Vector4, Vector4] {
-        let forward = this.normalize();
-        var right, up;
-        if (Math.abs(forward.y) < 1.0 - epsilon) {
-            right = new Vector4(0, 1, 0, 0).cross(forward).normalize();
-            up = forward.cross(right).normalize();
+    public orthonormalBasis(): [Vector4, Vector4, Vector4] {
+        let forward: Vector4 = new Vector4(this.x, this.y, this.z).normalize();
+        let up: Vector4, right: Vector4;
+        if (Math.abs(forward.y) > 1 - 1e-6) {
+            up = Vector4.rightward.cross(forward);
+            right = forward.cross(up);
         } else {
-            up = new Vector4(1, 0, 0, 0).cross(forward).normalize();
-            right = forward.cross(up).normalize();
+            right = forward.cross(Vector4.upward);
+            up = right.cross(forward);
         }
-        return [right, up];
+        return [right, up, forward];
     } 
 }

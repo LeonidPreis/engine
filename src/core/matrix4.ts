@@ -1,3 +1,4 @@
+import { Vector3 } from "./vector3";
 import { Vector4 } from "./vector4";
 
 export class Matrix4 {
@@ -191,12 +192,29 @@ export class Matrix4 {
         ]);
     }
 
-    static fromBasis(right: Vector4, up: Vector4, forward: Vector4): Matrix4 {
+    public static fromBasis(right: Vector4, up: Vector4, forward: Vector4): Matrix4 {
         return new Matrix4(
             right.x,   right.y,   right.z,   0,
             up.x,      up.y,      up.z,      0,
             forward.x, forward.y, forward.z, 0,
             0,         0,         0,         1 
+        );
+    }
+
+    public static fromAxisAngle(axis: Vector3 | Vector4, angle: number): Matrix4 {
+        const length = axis.length();
+        if (length < 1e-3) return new Matrix4;
+        const x = axis.x / length;
+        const y = axis.y / length;
+        const z = axis.z / length;
+        const c = Math.cos(angle);
+        const s = Math.sin(angle);
+        const t = 1 - c;
+        return new Matrix4(
+            t * x * x + c,     t * x * y - s * z, t * x * z + s * y, 0,
+            t * x * y + s * z, t * y * y + c,     t * y * z - s * x, 0,
+            t * x * z - s * y, t * y * z + s * x, t * z * z + c,     0,
+            0,                 0,                 0,                 1
         );
     }
 }

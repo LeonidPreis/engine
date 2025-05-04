@@ -1,4 +1,4 @@
-import { ArcballCamera } from "./camera";
+import { Camera } from "./camera";
 import { Instance } from "./instance";
 import { BufferManager } from "./buffer-manager";
 import { defaultShader } from "./default-shaders"
@@ -11,7 +11,7 @@ interface Subscriber {
 
 export class WebGPU implements Subscriber{
     private canvas: HTMLCanvasElement;
-    private camera: ArcballCamera;
+    private camera: Camera;
     private instances: Instance[];
     private shader: string = defaultShader;
     private device: GPUDevice | null = null;
@@ -29,7 +29,7 @@ export class WebGPU implements Subscriber{
             group: GPUBindGroup;
         }> = new Map();
 
-    constructor(canvas: HTMLCanvasElement, camera: ArcballCamera, instances: (Instance | null)[]) {
+    constructor(canvas: HTMLCanvasElement, camera: Camera, instances: (Instance | null)[]) {
         this.canvas = canvas;
         this.camera = camera;
         this.instances = this.instances = instances.filter((i): i is Instance => i instanceof Instance);
@@ -136,7 +136,7 @@ export class WebGPU implements Subscriber{
     }
 
     public render(
-        camera: ArcballCamera
+        camera: Camera
     ): void {
         if (!this.device || !this.context || !this.bufferManager) {
             throw new Error("Device, context, or bufferManager is not initialized.");

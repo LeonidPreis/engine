@@ -1,5 +1,6 @@
 import { Euler, RotationOrder } from "./euler";
 import { Matrix4 } from "./matrix4";
+import { Vector3 } from "./vector3";
 import { Vector4 } from "./vector4"
 
 export class Quaternion {
@@ -87,12 +88,20 @@ export class Quaternion {
 
     public toRotationMatrix(): Matrix4 {
         const w = this.w, x = this.x, y = this.y, z = this.z;
+
         return new Matrix4(
             1 - 2 * (y * y + z * z), 2 * (x * y + w * z), 2 * (x * z - w * y), 0,
             2 * (x * y - w * z), 1 - 2 * (x * x + z * z), 2 * (y * z + w * x), 0,
             2 * (x * z + w * y), 2 * (y * z - w * x), 1 - 2 * (x * x + y * y), 0,
             0,                   0,                       0,                   1
         );
+
+        // return new Matrix4(
+        //     1 - 2 * (y * y - z * z), 2 * (x * y - w * z), 2 * (x * z + w * y), 0,
+        //     2 * (x * y + w * z), 1 - 2 * (x * x - z * z), 2 * (y * z - w * x), 0,
+        //     2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x - y * y), 0,
+        //     0,                   0,                       0,                   1
+        // );
     }
 
     public multiply(q: Quaternion): Quaternion {
@@ -143,8 +152,9 @@ export class Quaternion {
         );
     }
 
-    public static fromAngleAxis(angle: number, axis: Vector4): Quaternion {
+    public static fromAngleAxis(angle: number, axis: Vector3 | Vector4): Quaternion {
         angle /= 2;
+        axis.normalize();
         const sin = Math.sin(angle);
         return new Quaternion(
             Math.cos(angle),

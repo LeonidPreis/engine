@@ -75,7 +75,7 @@ class HSI implements ColorFormatConverter {
     fromRGBA(rgbaData: [number, number, number, number]): ColorData {
         const [r, g, b, a] = rgbaData;
         const rgb = r + g + b;
-        if (rgb === 0) { return [0, 0, 0]; }
+        if (rgb === 0) return [0, 0, 0];
 
         const R = r / rgb;
         const G = g / rgb;
@@ -91,12 +91,7 @@ class HSI implements ColorFormatConverter {
         if (denominator !== 0) {
             const cosTheta = Math.max(-1, Math.min(1, numerator / denominator));
             const theta = Math.acos(cosTheta) * (180 / Math.PI);
-
-            if (B <= G) {
-                h = theta;
-            } else {
-                h = 360 - theta;
-            }
+            h = B <= G ? theta : 360 - theta;
         }
 
         return [

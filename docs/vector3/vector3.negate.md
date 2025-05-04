@@ -1,6 +1,7 @@
 ### [Vector3](./vector3.md).negate
 #### Description
 Inverts the direction of the vector by negating each of its components. This operation returns a new vector pointing in the exact opposite direction.
+
 ![](/docs/figures/vectors/vector3.negate.formula.png)
 
 #### Signature

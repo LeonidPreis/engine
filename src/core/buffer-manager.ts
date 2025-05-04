@@ -1,4 +1,4 @@
-import { ArcballCamera } from "./camera";
+import { Camera } from "./camera";
 import { Instance } from "./instance";
 import { Model, PrimitiveType } from "./model";
 
@@ -81,7 +81,7 @@ export class BufferManager {
         return { vertices, indices, colors, normals, uniform };
     }
 
-    public updateUniformBuffer(uniformBuffer: GPUBuffer, instance: Instance, camera: ArcballCamera) {
+    public updateUniformBuffer(uniformBuffer: GPUBuffer, instance: Instance, camera: Camera) {
         const matrices = new Float32Array(64);
         matrices.set(instance.getTransformationMatrix().transpose().toFloat32Array(), 0);
         matrices.set(camera.getViewMatrix().transpose().toFloat32Array(), 16);
