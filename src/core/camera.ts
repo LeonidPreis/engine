@@ -3,36 +3,37 @@ import { Matrix4 } from './matrix4'
 import { Quaternion } from './quaternion';
 import { IProjection, ProjectionDescriptor } from './projection';
 import { Vector3 } from './vector3';
+import { CameraEventController, ICameraCommand, KeyboardMoveCommand, PanCommand, RotateCommand, ZoomCommand } from './camera-command';
 
-interface Subscriber {
-    update(): void;
-}
-
-type CameraInteractionType = 'rotate' | 'pan' | 'zoom';
-type CameraInteractionHandler = (event: MouseEvent | WheelEvent) => void;
-interface ICameraInteraction {active: boolean, handler: CameraInteractionHandler};
+interface Subscriber {update(): void;}
 
 export class Camera {
+    public keysPressed: { [key: string]: boolean } = {};
     private subscribers: Subscriber[] = [];
-
-    private canvas: HTMLCanvasElement;
-    private target!: Vector4;
-    private position!: Vector4;
-    private right!: Vector4;
-    private up!: Vector4;
-    private forward!: Vector4;
+    public canvas: HTMLCanvasElement;
+    public target!: Vector4;
+    public position!: Vector4;
+    public right!: Vector4;
+    public up!: Vector4;
+    public forward!: Vector4;
+    public verticalOffset: Vector4 = new Vector4();
+    public horizontalOffset: Vector4 = new Vector4();
+    public panOffset: Vector4 = new Vector4();
     private rotationMatrix!: Matrix4;
+    private verticalRotation!: Quaternion;
+    private horizontalRotation!: Quaternion;
     private rotationQuaternion!: Quaternion;
-    private theta!: number;
-    private phi!: number;
-    private radius!: number;
+    public theta!: number;
+    public phi!: number;
+    public radius!: number;
     private lastMouseX: number = 0;
     private lastMouseY: number = 0;
-    private panSpeed: number = 0.0005;
-    private zoomSpeed: number = 0.05;
-    private rotationSpeed: number = 0.01;
+    public panSpeed: number = 0.0005;
+    public zoomSpeed: number = 0.05;
+    public rotationSpeed: number = 0.005;
     public projection: IProjection<ProjectionDescriptor>;
-    private interactions: Record<CameraInteractionType, ICameraInteraction>;
+    private eventController: CameraEventController;
+    public dirty: boolean = true;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -43,12 +44,8 @@ export class Camera {
         this.canvas = canvas;
         this.init(target, position);
         this.projection = projection;
-        this.interactions = {
-            rotate: { active: false, handler: this.handleRotating.bind(this) },
-            pan: { active: false, handler: this.handlePanning.bind(this) },
-            zoom: { active: false, handler: this.handleZooming.bind(this) as CameraInteractionHandler}
-        };
-        this.setupEventListeners();
+        this.keysPressed = {};
+        this.eventController = new CameraEventController(this);
     }
 
     public subscribe(subscriber: Subscriber): void {
@@ -60,22 +57,6 @@ export class Camera {
     public notify(): void {
         this.subscribers.forEach(subscriber => subscriber.update());
     }
-
-    private setupEventListeners(): void {
-        this.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
-        this.canvas.addEventListener('wheel', (event) => {
-            event.preventDefault();
-            this.handleZooming(event);
-        }, { passive: false });
-        
-        this.canvas.addEventListener('mousedown', (event) => {
-            switch(event.button) {
-                case 0: this.startInteraction(event, 'rotate'); break;
-                case 2: this.startInteraction(event, 'pan'); break;
-            }
-        });
-    }
-
     private init(target: Vector4, position: Vector4): void {
         [this.target, this.position] = [target, position];
         [this.right, this.up, this.forward] = position.subtract(this.target).normalize().orthonormalBasis();
@@ -83,70 +64,24 @@ export class Camera {
         this.radius = this.target.distance(this.position);
         this.updateTransform();
     }
-    private updateMousePosition(event: MouseEvent): void {
+    public updateMousePosition(event: MouseEvent): void {
         [this.lastMouseX, this.lastMouseY] = [event.clientX, event.clientY];
     }
-    private getMouseDelta(event: MouseEvent): [number, number] {
+    public updateTransform(): void {
+        this.verticalRotation = Quaternion.fromAngleAxis(-this.phi, Vector3.rightward);
+        this.horizontalRotation = Quaternion.fromAngleAxis(-this.theta, Vector3.upward);
+        this.rotationQuaternion = this.horizontalRotation.multiply(this.verticalRotation);
+        this.rotationMatrix = this.rotationQuaternion.toRotationMatrix();
+        this.right.copy(this.rotationMatrix.getRightVector());
+        this.up.copy(this.rotationMatrix.getUpVector());
+        this.forward.copy(this.rotationMatrix.getForwardVector());
+        this.position.copy(this.target.subtract(this.forward.scale(this.radius)));
+    }
+    public getMouseDelta(event: MouseEvent): [number, number] {
         return [event.clientX - this.lastMouseX, event.clientY - this.lastMouseY];
     }
-    private startInteraction(event: MouseEvent, type: CameraInteractionType): void {
-        this.updateMousePosition(event);
-        this.interactions[type].active = true;
-        
-        const onMouseMove = this.interactions[type].handler;
-        const onMouseUp = () => {
-            this.interactions[type].active = false;
-            this.canvas.removeEventListener('mousemove', onMouseMove);
-            this.canvas.removeEventListener('mouseup', onMouseUp);
-        };
-        
-        this.canvas.addEventListener('mousemove', onMouseMove, false);
-        this.canvas.addEventListener('mouseup', onMouseUp, false);
-    }
-
-    private handleRotating(event: MouseEvent): void {
-        if (!this.interactions.rotate.active) return;
-        const [deltaX, deltaY] = this.getMouseDelta(event);
-        this.theta -= deltaX * this.rotationSpeed;
-        this.phi -= deltaY * this.rotationSpeed;
-        this.updateMousePosition(event);
-        this.updateTransform();
-    }
-
-    private handlePanning(event: MouseEvent): void {
-        if (!this.interactions.pan.active) return;
-        const [deltaX, deltaY] = this.getMouseDelta(event);
-        const horizntalOffset = this.right.scale(-deltaX * this.panSpeed * this.radius);
-        const verticalOffset = this.up.scale(deltaY * this.panSpeed * this.radius);
-        const panOffset = horizntalOffset.add(verticalOffset);
-        this.target = this.target.add(panOffset);
-        this.position = this.position.add(panOffset);
-        this.updateMousePosition(event);
-        this.updateTransform();
-    }
-
-    private handleZooming(event: WheelEvent): void {
-        const zoomFactor = event.deltaY < 0 ? 1 + this.zoomSpeed : 1 - this.zoomSpeed;
-        this.radius *= zoomFactor;
-        if (this.projection.zoom)
-            this.projection.zoom(zoomFactor);
-        this.position = this.target.subtract(this.forward.scale(this.radius));
-        this.updateTransform();
-    }
-
-    private updateTransform(): void {
-        let verticalRotation = Quaternion.fromAngleAxis(-this.phi, new Vector3(1,0,0));
-        let horizontalRotation = Quaternion.fromAngleAxis(-this.theta, new Vector3(0,1,0));
-        this.rotationQuaternion = verticalRotation.multiply(horizontalRotation);
-        this.rotationMatrix = this.rotationQuaternion.toRotationMatrix();
-        this.right = this.rotationMatrix.getRightVector();
-        this.up = this.rotationMatrix.getUpVector();
-        this.forward = this.rotationMatrix.getForwardVector();
-        this.position = this.target.subtract(this.forward.scale(this.radius));
-        this.notify();
-    }
-
     public getViewMatrix(): Matrix4 {
+        if (this.dirty) this.updateTransform(); this.dirty = false;
         return new Matrix4(                               // offsets
             this.right.x,   this.right.y,   this.right.z,   -this.right.dot(this.position),
             this.up.x,      this.up.y,      this.up.z,      -this.up.dot(this.position),

@@ -21,6 +21,10 @@ export class Vector4 {
         return new Vector4(this.x, this.y, this.z, this.w);
     }
 
+    public copy(v4: Vector4): void {
+        [this.x, this.y, this.z, this.w] = [v4.x, v4.y, v4.z, v4.w]
+    }
+
     public negate(): Vector4 {
         return new Vector4(-this.x, -this.y, -this.z, -this.w);
     }
