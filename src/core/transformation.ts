@@ -24,7 +24,7 @@ export class Transformation implements ITransformation {
     private _orientation: Orientation = new Matrix4;
     private _scale: Scale = new Vector3(1,1,1);
     private _lastTransform: Matrix4 = new Matrix4;
-    private _subjectToUpdate: boolean = true;
+    private _dirty: boolean = true;
  
     constructor(
         position: Position = new Vector3(0,0,0),
@@ -42,7 +42,7 @@ export class Transformation implements ITransformation {
 
     set position(position: Position) {
         this._position = position;
-        this._subjectToUpdate = true;
+        this._dirty = true;
     }
 
     get orientation(): Orientation {
@@ -51,7 +51,7 @@ export class Transformation implements ITransformation {
 
     set orientation(orientation: Orientation) {
         this._orientation = orientation;
-        this._subjectToUpdate = true;
+        this._dirty = true;
     }
 
     get scale(): Scale {
@@ -60,7 +60,7 @@ export class Transformation implements ITransformation {
 
     set scale(scale: Scale) {
         this._scale = scale;
-        this._subjectToUpdate = true;
+        this._dirty = true;
     }    
 
     private getScaleMatrix(): Matrix4 {
@@ -100,8 +100,8 @@ export class Transformation implements ITransformation {
     }
 
     public getTransformation(): Matrix4 {
-        if (this._subjectToUpdate) {
-            this._subjectToUpdate = false;
+        if (this._dirty) {
+            this._dirty = false;
             this._lastTransform = this.getTransformationMatrix();
         }
         return this._lastTransform;

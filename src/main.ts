@@ -9,14 +9,18 @@ import { Vector3 } from "./core/vector3";
 import { Vector4 } from "./core/vector4";
 import { Mesh } from "./core/mesh"
 import { Color } from "./core/color";
+import { EventBuffer } from "./core/event-buffer"
 
-
+const viewportContainer = document.getElementById('viewport-container');
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const ratio = window.devicePixelRatio || 1;
-canvas.width = window.innerWidth * ratio;
-canvas.height = window.innerHeight * ratio;
-canvas.style.width = `${window.innerWidth}px`;
-canvas.style.height = `${window.innerHeight}px`;
+canvas.width = viewportContainer!.clientWidth * ratio;
+canvas.height = viewportContainer!.clientHeight * ratio;
+canvas.style.width = `${viewportContainer!.clientWidth}px`;
+canvas.style.height = `${viewportContainer!.clientHeight}px`;
+window.addEventListener('DOMContentLoaded', () => {
+    const eventBuffer = new EventBuffer(canvas as HTMLElement);
+});
 
 const camera = new Camera(
     canvas,

@@ -118,7 +118,7 @@ export class WebGPU implements Subscriber{
         return encoder.beginRenderPass({
             colorAttachments: [{
                 view: this.context.getCurrentTexture().createView(),
-                clearValue: { r: 0.05, g: 0.05, b: 0.05, a: 1 },
+                clearValue: { r: 0.102, g: 0.102, b: 0.106, a: 1 },
                 loadOp: "clear",
                 storeOp: "store",
             }],
